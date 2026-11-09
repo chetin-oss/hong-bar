@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="홍상수 영화 같은 밤 술집. 걸어 다니다 아무 테이블에나 앉아 술을 따르고, 마시고, 담배 피우고, 고백한다.">
+<title>어느 밤 술집</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: full-bleed 3D canvas you walk through; thin status row on top, plain subtitle strip low, actions or a sit prompt at the bottom. Single committed night look. */
+:root{
+  --night:#110e0c;
+  --panel:rgba(17,14,12,.74);
+  --paper:#f2eadf;
+  --muted:#a7998a;
+  --soju:#5fae7c;
+  --lamp:#efb45b;
+  --rose:#d9786b;
+  --line:rgba(242,234,223,.16);
+  --f-title:"Gowun Batang","Nanum Myeongjo",serif;
+  --f-ui:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px}
+html,body{height:100%;background:var(--night);color:var(--paper);overflow:hidden}
+body{font-family:var(--f-ui);-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;-webkit-user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;transition:filter .8s}
+button,input{font-family:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
+
+#labels,#tags{position:fixed;inset:0;pointer-events:none}
+.tlabel{position:absolute;transform:translate(-50%,-100%);text-align:center;transition:opacity .4s;white-space:nowrap}
+.tlabel b{display:block;font-family:var(--f-title);font-size:14px;font-weight:700;text-shadow:0 1px 4px #000,0 0 2px #000}
+.tlabel span{display:block;font-size:11.5px;color:#d8cbb9;text-shadow:0 1px 3px #000}
+.ptag{position:absolute;transform:translate(-50%,-100%);text-align:center;max-width:220px}
+.ptag b{display:inline-block;font-size:12px;font-weight:400;background:rgba(17,14,12,.7);border:1px solid var(--line);border-radius:10px;padding:1px 8px;color:var(--lamp)}
+.ptag p{margin:4px 0 0;font-family:var(--f-title);font-size:13.5px;line-height:1.35;background:rgba(242,234,223,.92);color:#1c1714;border-radius:4px;padding:4px 8px;white-space:normal}
+
+#top{position:fixed;top:0;left:0;right:0;display:flex;align-items:flex-start;gap:10px;padding-top:calc(12px + env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none;flex-wrap:wrap}
+#top>*{pointer-events:auto}
+.ghost{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:7px 12px;font-size:13px}
+.ghost:hover{border-color:var(--paper)}
+#chips{display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100% - 120px)}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:6px 11px 7px;text-align:left;min-width:108px}
+.chip[aria-pressed="true"]{border-color:var(--lamp);box-shadow:inset 0 -2px 0 var(--lamp)}
+.chip b{font-family:var(--f-title);font-size:14px}
+.chip small{color:var(--muted);font-size:11px;margin-left:5px}
+.chip.person b{color:var(--lamp)}
+.meters{display:grid;grid-template-columns:auto auto;gap:2px 8px;margin-top:4px;font-size:10.5px;color:var(--muted);align-items:center}
+.dots{letter-spacing:2px;font-size:9px;color:var(--line)}
+.dots i{font-style:normal}
+.dots i.on{color:var(--soju)}
+.dots.heart i.on{color:var(--rose)}
+#side{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+#me{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:6px 11px;font-size:11px;color:var(--muted)}
+#me .dots i.on{color:var(--lamp)}
+#online{color:var(--paper)}
+#sideBtns{display:flex;gap:6px}
+#sideBtns .ghost{font-size:12px;padding:5px 10px}
+#hint{font-size:12px;color:var(--muted);text-shadow:0 1px 3px #000;pointer-events:none;line-height:1.5}
+#hint b{color:var(--paper);font-weight:400}
+
+#chatBar{position:fixed;left:50%;transform:translateX(-50%);top:calc(70px + env(safe-area-inset-top,0px));width:min(520px,calc(100% - 32px));display:flex;gap:6px}
+#chatBar input{flex:1;min-width:0;background:rgba(17,14,12,.88);border:1px solid var(--lamp);border-radius:3px;padding:10px 12px;font-size:15px;user-select:text;-webkit-user-select:text}
+#chatBar button{background:var(--lamp);color:#1c1714;border:0;border-radius:3px;padding:0 14px;font-size:14px}
+
+#sub{position:fixed;left:0;right:0;bottom:calc(118px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none;opacity:0;transition:opacity .25s}
+#sub.on{opacity:1}
+#sub.far{opacity:.62}
+#sub p{margin:0;max-width:34em;text-align:center;font-family:var(--f-title);font-size:clamp(17px,2.3vw,23px);line-height:1.5;text-shadow:0 0 2px #000,0 2px 8px rgba(0,0,0,.9);text-wrap:balance}
+#sub .who{display:block;font-family:var(--f-ui);font-size:12px;color:var(--lamp);letter-spacing:.08em;margin-bottom:2px}
+#sub.person .who{color:#9fd6b4}
+
+#actions{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:clamp(8px,3vw,22px);padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:10px;background:linear-gradient(to top,rgba(17,14,12,.85),rgba(17,14,12,0))}
+.act{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;padding:0;width:74px;transition:opacity .2s,transform .15s}
+.act .ring{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);transition:border-color .2s,background .2s}
+.act svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.act span{font-size:12.5px;white-space:nowrap}
+.act:hover:not(:disabled) .ring{border-color:var(--paper);background:rgba(40,33,28,.9)}
+.act:active:not(:disabled){transform:scale(.94)}
+.act[data-act="pour"] .ring{color:var(--soju)}
+.act[data-act="drink"] .ring{color:var(--lamp)}
+.act[data-act="smoke"] .ring{color:#c9c1b6}
+.act[data-act="confess"] .ring{color:var(--rose)}
+.act:disabled{opacity:.38;cursor:default}
+
+.bottomBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(28px + env(safe-area-inset-bottom,0px));font-size:15px;padding:11px 22px;text-align:center}
+#sit b{font-family:var(--f-title);font-weight:700}
+#sit small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+kbd{font-family:var(--f-ui);font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 5px;margin-left:6px;color:var(--muted)}
+#invite{position:fixed;left:50%;transform:translateX(-50%);top:calc(130px + env(safe-area-inset-top,0px));background:rgba(17,14,12,.9);border:1px solid var(--lamp);border-radius:3px;padding:10px 14px;display:flex;gap:12px;align-items:center;font-size:14px;max-width:calc(100% - 32px)}
+#invite button{background:var(--lamp);color:#1c1714;border:0;border-radius:3px;padding:6px 12px}
+#invite .x{background:none;color:var(--muted);padding:6px 4px}
+
+#joy{position:fixed;left:max(22px,calc(env(safe-area-inset-left,0px) + 16px));bottom:calc(26px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;border:1px solid var(--line);background:rgba(17,14,12,.35);touch-action:none}
+#joy i{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:rgba(242,234,223,.22);border:1px solid rgba(242,234,223,.35)}
+
+#dissolve{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;opacity:0}
+#bwBtn[aria-pressed="true"]{border-color:var(--paper)}
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .6s}
+#place{position:fixed;top:38%;left:0;right:0;text-align:center;font-family:var(--f-title);font-size:20px;letter-spacing:.2em;opacity:0;transition:opacity .8s;pointer-events:none;text-shadow:0 2px 10px #000}
+
+#card{position:fixed;inset:0;display:grid;place-items:center;background:rgba(31,54,48,.93);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));transition:opacity .9s;overflow:auto}
+#card.out{opacity:0;pointer-events:none}
+#card .in{max-width:30em;text-align:center;padding-block:24px}
+#card h1{font-family:var(--f-title);font-weight:400;font-size:clamp(34px,7vw,56px);margin:0;letter-spacing:.06em;text-wrap:balance}
+#card .sub{margin:14px 0 0;color:#cfe0d6;font-size:14px;letter-spacing:.1em}
+#card ul{list-style:none;padding:0;margin:26px auto 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 22px;max-width:22em;text-align:left;font-size:13.5px;color:#e2ece6}
+#card li b{color:var(--paper);font-weight:400;font-family:var(--f-title)}
+#card .how{margin:20px 0 0;font-size:13px;color:#cfe0d6;line-height:1.7}
+#card label{display:block;margin-top:22px;font-size:12px;color:#cfe0d6;letter-spacing:.08em}
+#card #nick{display:block;margin:6px auto 0;width:12em;max-width:100%;text-align:center;background:rgba(0,0,0,.2);border:1px solid #9fbcae;border-radius:2px;padding:9px 10px;font-size:16px;font-family:var(--f-title);user-select:text;-webkit-user-select:text}
+#card .start{margin-top:18px;background:none;border:1px solid #e2ece6;border-radius:2px;padding:11px 26px;font-size:15px;letter-spacing:.1em}
+#card .start:hover{background:rgba(255,255,255,.08)}
+#card .fine{margin-top:14px;font-size:11.5px;color:#a9c2b5;line-height:1.6}
+
+@media (max-width:520px){
+  .act{width:62px}.act .ring{width:50px;height:50px}.act span{font-size:11.5px}
+  #sub{bottom:calc(108px + env(safe-area-inset-bottom,0px))}
+  .chip{min-width:0;padding:5px 8px}
+  body.walk #sub{bottom:calc(160px + env(safe-area-inset-bottom,0px))}
+  #sit{left:auto;right:max(16px,env(safe-area-inset-right,0px));transform:none;bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+}
+@media (prefers-reduced-motion:reduce){#c,#fade,#card,#place,#sub{transition:none}}
+</style>
+</head>
+<body>
+
+<canvas id="c" aria-label="술집 3D 공간"></canvas>
+<div id="labels"></div>
+<div id="tags"></div>
+
+<div id="top">
+  <button class="ghost" id="leave" hidden>← 일어나기</button>
+  <div id="chips" hidden></div>
+  <div id="hint" hidden></div>
+  <div id="side" hidden>
+    <div id="me"><div class="meters"><span>나의 취기</span><span id="meDots"></span><span>내 잔</span><span id="myGlass">비었음</span><span>같이 있는 사람</span><span id="online">나 혼자</span></div></div>
+    <div id="sideBtns"><button class="ghost" id="talkBtn">말하기<kbd>T</kbd></button><button class="ghost" id="bwBtn" aria-pressed="false">흑백</button><button class="ghost" id="soundBtn" aria-pressed="true">소리 켬</button></div>
+  </div>
+</div>
+<form id="chatBar" hidden><input id="chatIn" maxlength="80" autocomplete="off" placeholder="한마디 하기 (Enter로 보내기)"><button type="submit">말하기</button></form>
+<div id="invite" hidden><span id="inviteTx"></span><button id="inviteGo">나가기</button><button class="x" id="inviteX" aria-label="닫기">닫기</button></div>
+
+<div id="sub" aria-live="polite"><p><span class="who" id="who"></span><span id="line"></span></p></div>
+
+<div id="actions" hidden>
+  <button class="act" data-act="pour"><div class="ring"><svg viewBox="0 0 32 32"><g transform="rotate(-52 15 12)"><rect x="12" y="5" width="6.5" height="13" rx="2"/><path d="M13.6 5V2h3.3v3"/></g><path d="M22.5 17.5v3"/><path d="M17 22.5h10.5l-1.3 6.5h-7.9z"/></svg></div><span>술 따르기</span></button>
+  <button class="act" data-act="drink"><div class="ring"><svg viewBox="0 0 32 32"><path d="M9 6h14l-2.2 20H11.2z"/><path d="M10.1 14h11.8"/><path d="M14 3.5c.6.8.6 1.5 0 2.2M18 3.5c.6.8.6 1.5 0 2.2"/></svg></div><span>술 마시기</span></button>
+  <button class="act" data-act="smoke"><div class="ring"><svg viewBox="0 0 32 32"><rect x="4" y="21" width="21" height="4" rx=".6"/><path d="M20 21v4"/><path d="M27.5 21.5v3"/><path d="M23 17c-2-1.8 2-3.6 0-5.4s2-3.6 0-5.4"/></svg></div><span>담배 피기</span></button>
+  <button class="act" data-act="confess"><div class="ring"><svg viewBox="0 0 32 32"><path d="M16 27s-10-6-10-12.6A5 5 0 0 1 16 12a5 5 0 0 1 10 2.4C26 21 16 27 16 27z"/></svg></div><span>사랑 고백</span></button>
+</div>
+<button class="ghost bottomBtn" id="sit" hidden></button>
+<button class="ghost bottomBtn" id="goIn" hidden>안으로 들어가기</button>
+<div id="joy" hidden><i></i></div>
+
+<canvas id="dissolve" aria-hidden="true"></canvas>
+<div id="place"></div>
+<div id="fade"></div>
+
+<div id="card">
+  <div class="in">
+    <h1>어느 밤, 술집</h1>
+    <p class="sub">여덟 개의 테이블 · 열여섯 명의 사람 · 소주</p>
+    <ul>
+      <li><b>술 따르기</b> · 상대 잔을 채워요</li>
+      <li><b>술 마시기</b> · 다 같이 건배</li>
+      <li><b>담배 피기</b> · 가게 앞에서 속얘기</li>
+      <li><b>사랑 고백</b> · 타이밍이 전부</li>
+    </ul>
+    <p class="how" id="how">WASD나 방향키로 걷고, 마우스로 끌어서 둘러봐요.<br>빈 의자 앞에서 E를 누르면 앉아요. T를 누르면 말할 수 있어요.</p>
+    <label for="nick">가게에서 불릴 이름</label>
+    <input id="nick" maxlength="10" autocomplete="off" placeholder="손님">
+    <button class="start" id="start">가게로 들어가기</button>
+    <p class="fine">지금 이 주소에 들어와 있는 사람들은 같은 가게에 있어요.<br>대사는 모두 이 공간을 위해 새로 쓴 것입니다.</p>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<script src="firebase-room.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const T = THREE, PI = Math.PI;
+const $ = s => document.querySelector(s);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const touch = matchMedia('(pointer: coarse)').matches;
+const store = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} } };
+
+/* ───────────── 대사 ───────────── */
+const PLAYER_LINES = {
+  pour: ["한 잔 받으세요.","제가 따라드릴게요.","잔이 비었네요."],
+  selfPour: ["…제가 따라 마실게요.","혼자 따를게요. 괜찮아요."],
+  drink: [["건배해요.","저도 한 잔 할게요."],["좋다. 술이 좋네요.","마셔요, 그냥 마셔요."],["저 안 취했어요. 진짜예요.","왜 이렇게 다 좋지? 다 좋아요."]],
+  empty: ["…잔이 비었네.","어, 비었다."],
+  smoke: ["담배 한 대 피우실래요?","잠깐 바람 좀 쐬러 나갈래요?"],
+  confess: [["저… 좋아하는 것 같아요.","이상하게 들리겠지만, 좋아요."],["좋아요. 진짜 좋아요. 그냥 좋아요.","저 사실 아까부터 좋았어요."],["너무 좋아요. 너무 좋아. 정말 너무 좋아요.","좋아하는 것 같아요, 제가. 많이요."]]
+};
+const OTHER_ON_CONFESS = ["…저 잠깐 화장실 좀.","와, 진짜. 여기서 그런 말을 해요?","하하… 두 분이 얘기하세요.","나는 안 들은 걸로 할게요."];
+const REJOIN = [[0,"어, 다시 오셨네요."],[1,"앉으세요. 아까 그 얘기 하던 중이었어요."],[0,"무슨 얘기였더라… 아, 그 얘기."]];
+const NPC_POURS_YOU = ["잔 비었네. 받아요.","빈 잔 보면 못 참아요. 받으세요.","자, 한 잔. 사양 마요.","잔이 비면 마음도 비어요. 받아요."];
+const NPC_ON_SELFPOUR = ["아이, 왜 혼자 따라요. 말을 하지.","자작하면 앞사람 삼 년 재수 없대요.","말하지. 따라줬을 텐데."];
+const NPC_ON_PERSON = ["어, 아는 사이예요?","두 분 친해 보이네요.","우리도 끼워줘요."];
+
+const TABLES = [
+{ title:"감독과 후배", desc:"영화감독 선배와 배우 지망생", pos:[2.5,-2],
+  chars:[
+  { name:"성준", role:"영화감독", look:{coat:0x6e2a22, hair:0x161210, pants:0x1e1c1f},
+    pour:[["아이고, 고마워요. 젊은 사람이 예의가 있네.","어, 받을게. 받아야지."],["좋다. 이렇게 따라주니까 좋다. 진짜 좋다.","당신 좋은 사람이야. 내가 보면 알아."],["더 줘. 오늘은 그냥 다 마실 거야. 다.","나 취한 거 아니야. 이제 시작이야~"]],
+    drink:[["잘 마시네. 술 잘 마시는 사람 좋아.","원샷? 아이고, 그렇게 마시면 안 돼요."],["건배! 건배. 우리 이 순간을 위해서.","술은 따지면서 마시는 거 아니야. 그냥 마시는 거지~"],["마셔. 마시고 다 잊어버려. 나도 잊을 거야.","인생 별거 없어. 별거 없는데 왜 이렇게 힘드냐."]],
+    smoke:["밖에 나오니까 좀 살겠다. 안에선 내가 계속 떠들잖아.","사실 나 요즘 하나도 못 찍어. 아무도 몰라. 은희도 몰라.","재능 있다는 말, 그거 사실 나한테 해주는 말이야. 나한테."],
+    low:["어… 그래요? 고마워요. 근데 우리 오늘 처음 봤잖아.","하하, 농담이지? 농담이면 재밌다."],
+    high:["…나도. 나도 그런 것 같아. 이상하지? 이상한데 그래.","그런 말을 이렇게 쉽게 하면 안 돼. 안 되는데… 듣기 좋다."] },
+  { name:"은희", role:"배우 지망생", look:{coat:0x5d6168, hair:0x14100e, long:true, scarf:0x283247},
+    pour:[["아, 감사합니다. 조금만요.","저 잘 못 마셔요. 진짜예요."],["좋아요. 오늘은 좀 마셔도 될 것 같아요.","따라주시니까 좋네요. 감독님은 맨날 자기 잔만 채우시거든요."],["더요. 더 주세요. 오늘은 그냥 취할래요.","왜 자꾸 따라주세요? 잘 보이고 싶으세요? 괜찮아요, 좋아요."]],
+    drink:[["와, 잘 드시네요.","천천히 드세요. 밤 길어요."],["저도 한 잔. 건배해요, 그냥 아무거나 위해서.","술 마시면 다 좀 솔직해지잖아요. 그게 좋아요."],["다들 왜 그렇게 살아요? 다 괜찮은 척하면서.","마셔요. 근데 내일 다 기억나실 거예요. 그게 문제예요."]],
+    smoke:["저 담배 안 피워요. 근데 나오고 싶었어요.","감독님 좋은 분이에요. 근데 좋은 분이라서 더 싫을 때가 있어요.","배우요? 하고 싶죠. 근데 하고 싶은 거랑 할 수 있는 거랑 다르더라구요."],
+    low:["네? …진짜 이상한 분이시네요.","저를 아세요? 모르시잖아요. 근데 왜 그런 말을 해요?"],
+    high:["…좋아요. 근데 무서워요. 좋으면 무서워요.","그 말 진짜예요? 진짜면… 한 번만 더 해주세요."] } ],
+  join:[[0,"어? 누구… 아는 사람이야?"],[1,"아니요. 그냥 앉으세요, 괜찮아요."],[0,"그래, 앉아요 앉아. 술은 같이 마셔야 맛이지."]],
+  ambient:[
+   [ [[0,"은희 씨는 있잖아, 재능이 있어. 그건 내가 보면 알아."],[1,"네… 감사합니다."],[0,"아니 진짜로. 인사치레 아니야. 있어. 있다니까."]],
+     [[1,"감독님은 요즘 뭐 쓰세요?"],[0,"쓰지. 쓰는데… 안 써져. 그게 쓰는 거야."],[1,"아…"]],
+     [[0,"여기 계란말이 맛있다. 먹어봐."],[1,"저 아까부터 먹고 있었어요."],[0,"그래? 그래. 잘했어."]] ],
+   [ [[0,"나는 말이야, 거짓말을 못 해. 그래서 사람들이 날 싫어해."],[1,"감독님 거짓말 잘하시잖아요."],[0,"…그건 영화니까."]],
+     [[1,"근데 감독님은 왜 맨날 저한테 재능 있다고 해요?"],[0,"있으니까. 있으니까 있다고 하지."],[1,"다른 애들한테도 그러시던데."]],
+     [[0,"내가 너무 늦게 시작했어. 너무 늦게. 다 늦었어."],[1,"지금도 하시잖아요."],[0,"하지. 하는데 늦었다구."]],
+     [[1,"사모님은 잘 계세요?"],[0,"…응. 잘 있지. 잘 있어."],[1,"다행이네요."]] ],
+   [ [[1,"감독님은요, 좋은 사람인 척하는 게 제일 싫어요. 그냥 나쁜 사람이면 차라리 낫지."],[0,"…맞아. 맞는 말이야. 근데 왜 그렇게 말해?"]],
+     [[0,"나 좀 안아주면 안 돼? 그냥 사람으로. 사람으로서."],[1,"싫어요. 사람으로서 싫어요."]],
+     [[1,"다들 똑같아요. 원하는 게 다 비슷해. 말만 다르지."],[0,"나는 달라."],[1,"그 말도 똑같아요."]],
+     [[0,"나는 은희 없으면 안 돼. 진짜야."],[1,"내가 너 첩 해줄까? 내가 너 진짜 첩 해줄까?"],[0,"…무슨 말을 그렇게 해."]] ] ] },
+
+{ title:"옛 연인", desc:"몇 년 만에 우연히 다시 만난 둘", pos:[-2.5,-2],
+  chars:[
+  { name:"상원", role:"소설가", look:{coat:0x2f3b2c, hair:0x1b1714, pants:0x26241f},
+    pour:[["아, 네. 고맙습니다.","조금만요. 오늘은 조금만 마실 거예요."],["좋네요. 이런 날은 마셔야죠.","고마워요. 저 사람은 이제 안 따라줘요. 옛날엔 따라줬는데."],["따라줘요. 나 오늘 망가질 거예요. 괜찮아요.","당신 착하다. 착한 사람은 손해 봐요. 나처럼."]],
+    drink:[["잘 드시네요.","건배할까요? 뭐 위해서 하지… 그냥 해요."],["술 마시면 좀 덜 후회돼요. 아주 조금.","마셔요. 따지지 말고. 따지면 술맛 없어요."],["나는 왜 이렇게 생겨먹었을까. 왜. 진짜 왜.","후회 안 하고 사는 사람 있어요? 있으면 데려와 봐요."]],
+    smoke:["저 사람 앞에선 담배 안 피웠었어요. 싫어해서. 이제 상관없죠.","제가 끝냈어요. 근데 제가 제일 못 잊어요. 웃기죠.","다시 만나자고 하면… 안 되겠죠. 안 되겠지."],
+    low:["네? 아… 저 지금 그런 상황이 아니라서요.","저를요? 저 별로예요. 저 사람한테 물어보세요."],
+    high:["…진짜요? 저 같은 사람을? 왜요. 왜요, 진짜.","고마워요. 고마운데 눈물 날 것 같아요. 이상하다."] },
+  { name:"미정", role:"번역가", look:{coat:0x232120, hair:0x120f0d, long:true, pants:0x1c1b1a},
+    pour:[["감사해요.","아 저 오늘 운전… 아니다, 안 해요. 주세요."],["오늘은 좀 취해도 되는 날 같아요.","따라주시니까 좋네요. 누가 따라주는 거 오랜만이에요."],["가득이요. 가득 채워 주세요.","저 안 취했어요. 취했으면 벌써 울었어요."]],
+    drink:[["와, 시원하게 드시네.","천천히요. 그렇게 마시면 금방 끝나요."],["다 지나가요. 근데 지나가는 동안이 길어요.","건배해요. 끝난 것들을 위해서."],["다들 좋은 척하고 살잖아요. 저도요. 그래서 다 별로예요.","아무 데도 가고 싶지 않아요. 집도 싫고 여기도 싫고.","그때 왜 그랬어? 아니, 그쪽 말고. 저 사람한테 묻는 거예요."]],
+    smoke:["저 사람 아직도 저래요. 하나도 안 변했어.","근데 안 변해서 다행이다 싶기도 해요. 이상하죠.","오늘 안 나왔어야 했는데. 나오고 싶었어요. 그게 문제예요."],
+    low:["…저 지금 좀 복잡해요. 미안해요.","그런 말 쉽게 하는 사람 싫어요. 아, 쉽게 한 거 아니에요?"],
+    high:["…안아줘... 아니, 아니에요. 술 때문이에요.","…그래요. 고마워요. 진짜 오랜만에 듣는 말이에요.","저 사람 보는 데서 그런 말 하니까… 좀 좋네요. 나쁘죠, 저?"] } ],
+  join:[[1,"어… 앉으셔도 돼요. 저희 그냥 아는 사이예요."],[0,"그냥 아는 사이. 그렇지. 그냥 아는 사이."],[1,"왜 그렇게 말해."]],
+  ambient:[
+   [ [[0,"잘 지냈어?"],[1,"응. 잘 지냈어. 너는?"],[0,"나도. 나도 잘 지냈지. 잘…"]],
+     [[1,"너 아직도 그 동네 살아?"],[0,"응. 이사 가려고 했는데 못 갔어. 갈 데가 없더라구."]],
+     [[0,"머리 잘랐네."],[1,"그게 언젠데."],[0,"나는 처음 보니까."]] ],
+   [ [[0,"그때 내가 왜 그랬는지 모르겠어. 진짜 모르겠어."],[1,"몰라도 돼. 다 지난 일이야."],[0,"지난 일인데 계속 생각나는 걸 어떡해."]],
+     [[1,"너는 맨날 후회만 해. 후회하는 게 일이야."],[0,"누가 하고 싶어서 하냐. 아픈데."]],
+     [[0,"우리 그때 좋았잖아. 그치?"],[1,"좋았지. 좋았는데 그래서 뭐."]],
+     [[0,"나 다음 달에 바닷가 내려가. 그때 올래? 올 수 있어?"],[1,"…몰라. 그때 돼봐야 알지."]] ],
+   [ [[0,"나 다시 잘할 수 있어. 진짜야. 이번엔 진짜야."],[1,"그 말 몇 번째인지 알아?"],[0,"세 번째. 근데 이번이 진짜야."]],
+     [[1,"미안해? 미안하다며. 미안한데 왜 그때 아무 말도 안 했어."],[0,"…말하면 다 끝날 것 같았어."],[1,"안 해도 끝났어."]],
+     [[1,"나 혼자 여행 많이 다녔어. 좋더라. 좋은데… 사진 찍어도 보여줄 사람이 없어."],[0,"나한테 보여주지."],[1,"싫어."]],
+     [[1,"안아줘..."],[0,"…여기서?"],[1,"아니야. 됐어. 농담이야."]] ] ] },
+
+{ title:"교수와 제자", desc:"늙은 교수와 지친 대학원생", pos:[-2.5,1.8],
+  chars:[
+  { name:"박 교수", role:"철학과", look:{coat:0x8f7f60, hair:0x8c8a86, pants:0x3a3631},
+    pour:[["어허, 고마워요. 두 손으로 받아야지.","좋아요, 좋아. 이런 게 예의야."],["술은 따라주는 사람 마음이 들어가서 맛있는 거야.","당신 좋은 사람이네. 눈이 좋아. 눈이."],["더! 오늘은 내가 다 낸다. 다 마셔.","나 안 취했어. 취한 사람이 안 취했다고 하지. 그러니까 나 취했나?"]],
+    drink:[["잘 마시네. 젊어서 좋다.","원샷은 안 돼. 술은 음미하는 거야."],["그렇지! 머리로 사는 거 아니야. 그냥 사는 거야.","건배. 우리 모두의 실패를 위해서."],["인생은 짧아. 근데 밤은 길어. 그러니까 마셔.","나도 젊었을 땐 저렇게 마셨는데… 다 어디 갔냐."]],
+    smoke:["끊었는데. 한 대만. 한 대는 괜찮아.","나는 사실 별로 이룬 게 없어. 학생들은 모르지.","지수한테는 미안해. 내가 해줄 수 있는 게 별로 없어서."],
+    low:["허허, 이 사람 재밌네. 술이 들어가니까 다들 그래.","그런 말은 아껴요. 아껴야 진짜일 때 쓰지."],
+    high:["…고마워요. 이 나이에 그런 말 들으니까 이상하다. 좋다.","나도. 나도 좋아요. 사람이 좋은 거야, 그냥."] },
+  { name:"지수", role:"대학원생", look:{coat:0x3e5a7a, hair:0x17120f, bob:true, pants:0x2b2a2d},
+    pour:[["아, 제가 따라드려야 하는데. 감사합니다.","조금만요. 교수님 앞이라서요."],["감사해요. 오늘은 좀 마시고 싶었어요.","따라주시니까 좋다. 여기선 제가 맨날 따르거든요."],["주세요. 가득이요. 저 오늘 그만둘 거예요. 아마.","저 진짜 괜찮아요. 괜찮은데 왜 자꾸 눈물이 나지."]],
+    drink:[["와, 대단하시다.","저도 마실게요. 반만."],["건배해요. 그냥… 오늘 여기 있는 거에.","술 마시니까 좀 용기가 나요. 무슨 용기인지는 모르겠지만."],["다들 괜찮은 척하잖아요. 저도요. 그게 제일 힘들어요.","제가 여기 왜 앉아 있는지 모르겠어요. 진짜 모르겠어."]],
+    smoke:["저 담배 배웠어요. 대학원 와서. 교수님은 몰라요.","좋아하는 거 하는데 왜 이렇게 싫을까요.","그만두면 뭐 하죠. 아무것도 못 할 것 같아요."],
+    low:["네? 저요? …아, 교수님 들으세요.","저 그런 거 잘 몰라요. 진짜 몰라요."],
+    high:["…진짜요? 왜요? 저 아무것도 아닌데.","좋아요. 좋은데 오늘만 좋을까 봐 무서워요."] } ],
+  join:[[0,"오, 젊은 친구. 앉아요. 우리 얘기 재미없어요. 그래도 앉아."],[1,"교수님이 계속 혼자 말씀하셔서요. 오셔서 다행이에요."],[0,"내가 언제 혼자 말했어."]],
+  ambient:[
+   [ [[0,"지수야, 너는 재능이 있어. 많아. 많다구."],[1,"네… 근데 논문이 안 써져요."],[0,"재능 있는 사람은 원래 안 써져."]],
+     [[1,"교수님은 공부하시면서 행복하셨어요?"],[0,"행복? 행복은… 그거 묻는 사람이 불행한 거야."],[1,"아… 네."]],
+     [[0,"이 집 골뱅이가 옛날엔 더 맛있었어."],[1,"그럼 왜 맨날 여기 오세요?"],[0,"옛날이 생각나니까."]] ],
+   [ [[0,"사람은 말이야, 이유가 없어. 이유는 나중에 붙이는 거야."],[1,"그럼 제가 대학원 온 것도요?"],[0,"그것도. 그것도 나중에 이유가 생겨."]],
+     [[1,"교수님 저 힘들어요."],[0,"나는 너만 할 때 밥도 못 먹었어. 너는 밥은 먹잖아."],[1,"밥은 먹죠… 밥만 먹어요."]],
+     [[0,"슬픈 거 조심해. 슬픈 데 오래 있으면 거기 살게 돼."],[1,"그거 누가 한 말이에요?"],[0,"내가. 지금."]] ],
+   [ [[1,"교수님은 맨날 좋은 말만 하세요. 근데 그 말대로 사세요?"],[0,"…아니. 그러니까 하는 거지."]],
+     [[0,"나는 그거 하나만 지키고 살았어. 남한테 상처 주지 말자."],[1,"교수님 저한테 상처 많이 주셨는데요."],[0,"…그래? 언제?"]],
+     [[1,"저 그만둘까 봐요. 진짜로."],[0,"그만둬. 그만둬도 돼. …근데 그만두지 마."]] ] ] },
+
+{ title:"처음 만난 사이", desc:"오늘 이 가게에서 처음 본 두 사람", pos:[2.5,1.8],
+  chars:[
+  { name:"현우", role:"사진가", look:{coat:0x34465f, hair:0x1a1512, pants:0x222224},
+    pour:[["아 감사합니다. 저도 따라드릴게요.","좋아요. 이렇게 셋이 마시니까 좋네요."],["와, 고마워요. 손이 예쁘시네요. 아 이상한 뜻 아니에요.","이렇게 만나는 게 인연이에요. 저 그런 거 믿어요."],["더요! 오늘 같은 날은 다시 안 와요.","제가요, 오늘 너무 좋아요. 그냥 너무 좋아."]],
+    drink:[["오, 술 좋아하시네요.","건배! 처음 만난 사람들을 위해서."],["술 마시면 세상이 좀 덜 시끄러워요.","좋다. 진짜 좋다. 이렇게 이유 없이 좋은 게 진짜예요."],["저 원래 이런 사람 아니에요. 오늘만 이래요. 아니 원래 이래요.","다 우연이에요. 여기 온 것도 우연. 우연인데 왜 이렇게 좋지."]],
+    smoke:["밖에 나오니까 좀 진정되네요. 저 너무 들떴죠?","저 사람 너무 좋아요. 처음 보는데. 이거 미친 거죠?","사실 저 요즘 아무도 안 만났어요. 오늘 처음 웃었어요."],
+    low:["어… 저요? 저 지금 저분한테… 아, 아니에요.","하하, 고마워요. 근데 우리 오늘 처음 봤잖아요. 아, 저도 그랬구나."],
+    high:["저도요! 저도 좋아요. 다 좋아요. 이 밤이 좋아요.","…진짜요? 오늘 무슨 날이지. 이상하다. 좋다."] },
+  { name:"소영", role:"휴가 중", look:{coat:0xc4b9a6, hair:0x1d1713, long:true, pants:0x2c2a28},
+    pour:[["감사합니다. 저 술 세요.","네, 받을게요."],["좋네요. 혼자 마실 땐 누가 안 따라주거든요.","이렇게 마시니까 혼자 온 거 같지가 않아요."],["주세요. 오늘은 그냥 다 괜찮아요.","왜 이렇게 다들 잘해줘요? 저 내일 떠나는데."]],
+    drink:[["잘 드시네요. 저도요.","천천히요. 저 아직 안 취했거든요."],["좋은 데 오면 혼자인 게 더 티가 나요. 그래서 여기 앉았나 봐요.","건배해요. 아무 데도 안 가는 사람들을 위해서."],["다들 좋아 보이잖아요. 근데 가까이서 보면 다 슬퍼요.","저 내일 어디 갈지 모르겠어요. 아무 데도 안 가고 싶어요."]],
+    smoke:["담배는 안 피우는데 연기는 좋아요.","저 사실 회사 그만뒀어요. 휴가 아니에요.","그쪽은 좋은 사람 같아요. 근데 좋은 사람 만나면 꼭 떠나게 되더라구요."],
+    low:["…정말 이상한 분이시네요.","네? 아… 저 그런 말 들으면 웃음이 나요. 미안해요."],
+    high:["…저도요. 그런 것 같아요. 근데 내일이면 아닐 수도 있어요.","좋아요. 오늘은 좋아요. 그걸로 해요."] } ],
+  join:[[1,"어, 안녕하세요. 저희도 오늘 처음 봤어요."],[0,"네, 처음 봤는데 벌써 친해요. 그쵸?"],[1,"…글쎄요."]],
+  ambient:[
+   [ [[0,"혼자 오셨어요?"],[1,"네. 혼자 다니는 거 좋아해요. 아니, 좋아했어요."],[0,"왜 과거형이에요?"]],
+     [[0,"휴가세요?"],[1,"네. 근데 어디 가야 할지 몰라서 여기 있어요."],[0,"잘 오셨네요. 여기 좋아요."]],
+     [[1,"사진 찍으세요?"],[0,"네. 근데 요즘은 안 찍어요. 다 똑같아 보여서."]] ],
+   [ [[0,"이상하죠. 오늘 처음 봤는데 오래 본 것 같아요."],[1,"다들 그 말 하던데요."],[0,"저는 진짜예요."]],
+     [[1,"저는 바다 보면 아무 데도 가고 싶지 않아져요. 여기도 싫고 저기도 싫고."],[0,"그럼 여기 있으면 되잖아요."],[1,"여기도… 여기도 잠깐이죠."]],
+     [[0,"왜 자꾸 저를 그렇게 보세요?"],[1,"제가요? 그쪽이 보시는 건데."]] ],
+   [ [[0,"저 이런 말 하면 안 되는데… 같이 살고 싶어요. 오늘 처음 봤는데."],[1,"…이상한 분이시다, 진짜."],[0,"이상하죠. 저도 알아요."]],
+     [[1,"좋은 것만 보고 살기로 했어요. 근데 좋은 게 별로 없어요."],[0,"저 좋은 사람이에요."],[1,"그건 제가 정할게요."]],
+     [[0,"우리 내일도 만나요. 아니 내일 말고, 그냥 계속."],[1,"내일 기억 안 나실걸요."]] ] ] },
+
+{ title:"오랜 친구", desc:"이십 년 지기, 한 명은 할 말이 있다", pos:[0,0],
+  chars:[
+  { name:"동철", role:"화가", look:{coat:0x5b4a3a, hair:0x15110f, pants:0x252320},
+    pour:[["어 고마워. 기태 얘는 안 따라줘.","받을게. 받는 건 잘해."],["좋다, 좋아. 오늘 뭔가 좋은 날 같아.","눈이 맑으시네. 그리고 싶다."],["더 따라. 오늘은 끝까지 간다.","나 안 취했어. 그림 그릴 때보다 맨정신이야."]],
+    drink:[["잘 마시네. 기태보다 낫다.","건배. 그냥 건배."],["그림도 술이랑 똑같아. 생각하면 망해.","좋아, 이 맛이야. 이 맛에 사는 거야."],["나 그림 그만둘까. 아니야. 못 그만둬. 그게 문제야.","기태야, 너 나한테 뭐 숨기는 거 있지? 있지?"]],
+    smoke:["기태 쟤가 아까부터 뭔가 말하려고 해. 근데 안 해.","나는 친구가 쟤밖에 없어. 웃기지.","그림이 안 팔려도 괜찮아. 근데 쟤가 떠나면 안 괜찮아."],
+    low:["하하, 뭐야. 나 그런 거 처음 들어봐. 진짜 처음.","나한테? 잘못 짚었어요. 나 진짜 별로야."],
+    high:["…좋다. 그 말 그대로 그림으로 그리고 싶다.","나도. 나도 그래요. 근데 우리 술 깨면 어떡하지."] },
+  { name:"기태", role:"출판사 직원", look:{coat:0x2e3640, hair:0x1a1512, pants:0x1f1f22},
+    pour:[["아 감사합니다.","저 오늘 조금만 마셔야 돼요. 할 말이 있어서."],["감사해요. 마시면 말이 나올 것 같아요.","따라주시니까 용기가 좀 나네요."],["주세요. 오늘은 그냥 말해버릴 거예요.","동철아, 나 진짜 할 말 있어. …아니다, 한 잔 더."]],
+    drink:[["와, 잘 드시네요.","저도 마실게요. 반만."],["술은 용기를 빌려주는데 이자가 비싸요.","건배요. 말 못 한 것들을 위해서."],["다들 말 안 하고 살잖아요. 그래서 편하고, 그래서 다 망해요.","제가요… 아니에요. 진짜 아무것도 아니에요."]],
+    smoke:["저 다음 달에 이사 가요. 멀리요. 동철이는 몰라요.","말해야 되는데. 말하면 진짜가 되잖아요.","친구한테 제일 못 하는 말이 제일 중요한 말이더라구요."],
+    low:["네? 저요? 하하… 오늘 다들 왜 이래요.","고마워요. 근데 저 다음 달에 없어요."],
+    high:["…고마워요. 떠나기 전에 이런 말 들으니까 이상하다.","저도요. 오늘 처음 만났는데 제일 편해요."] } ],
+  join:[[0,"어 앉아요 앉아. 우리 둘이 너무 오래 봤어. 지겨워."],[1,"저희 이십 년 친구예요."],[0,"이십이 년."]],
+  ambient:[
+   [ [[1,"동철아, 나 할 말 있어."],[0,"뭔데."],[1,"…아니다. 이따 할게."]],
+     [[0,"너 요즘 얼굴이 좋아졌다."],[1,"그래? 잠을 좀 잤어."],[0,"나는 못 잤는데."]],
+     [[0,"이번 전시 아무도 안 왔어. 너만 왔어."],[1,"내가 가면 됐지."]] ],
+   [ [[1,"우리 처음 만났을 때 기억나?"],[0,"기억나지. 너 그때 울었잖아."],[1,"너가 울었어."]],
+     [[0,"나는 너 없으면 술 못 마셔. 진짜야."],[1,"…그 말 하지 마. 지금은."]],
+     [[1,"사람은 결국 혼자야."],[0,"그럼 지금 우리는 뭐야."],[1,"혼자 둘."]] ],
+   [ [[1,"나 간다. 멀리 가. 다음 달에."],[0,"…어디."],[1,"멀리."],[0,"왜 이제 말해."]],
+     [[0,"가지 말라고는 안 할게. 근데 가지 마."],[1,"그게 가지 말라는 거야."]],
+     [[1,"너 그림 계속 그려. 내가 없어도."],[0,"너 없으면 누가 봐."]] ] ] },
+
+{ title:"자매", desc:"늘 괜찮은 언니와 늘 철없는 동생", pos:[0,0],
+  chars:[
+  { name:"영선", role:"언니, 학원 강사", look:{coat:0x6a4a52, hair:0x16110f, long:true, pants:0x232022},
+    pour:[["고마워요. 우리 동생은 안 따라줘요.","네, 받을게요."],["좋네요. 언니 노릇 안 해도 되니까 좋다.","이렇게 받아만 보는 거 오랜만이에요."],["가득이요. 오늘은 내가 동생할래.","저 원래 술 안 마셔요. 오늘만요. 맨날 오늘만이에요."]],
+    drink:[["와, 시원시원하시다.","건배해요."],["언니로 사는 거 피곤해요. 아무도 모르지.","마셔요. 마시면 다 조금씩 착해져요."],["나도 하고 싶은 거 있었어. 다 영미 줬어.","왜 나만 괜찮아야 돼? 왜?"]],
+    smoke:["영미는 제가 담배 피우는 거 몰라요. 비밀이에요.","엄마 병원비, 제가 다 내요. 영미는 몰라요. 알면 안 돼요.","가끔 그냥 사라지고 싶어요. 아무 데도 아닌 데로."],
+    low:["어머, 왜 이러세요. 하하. 그런 말 오랜만에 들어요.","…동생한테 하세요. 걔가 더 예뻐요."],
+    high:["…고마워요. 진짜로. 누가 저만 봐준 거 처음이에요.","좋아요. 좋은데 저 내일 출근해요. 그래도 좋아요."] },
+  { name:"영미", role:"동생, 배우 지망", look:{coat:0xb79a5a, hair:0x1b1512, bob:true, pants:0x2a2826},
+    pour:[["앗 감사합니다~","저 잘 마셔요. 언니보다 잘 마셔요."],["좋다! 이 사람 좋다, 언니.","더 주세요. 오늘 기분 좋거든요. 이유는 없어요."],["언니는 맨날 나 때문에 힘들대. 나도 힘든데.","저 취했어요? 안 취했어요. 조금 취했어요."]],
+    drink:[["오~ 잘 드신다!","원샷! 아니 반샷."],["언니 얼굴 빨개졌다. 귀엽다.","사는 거 그냥 사는 거지, 뭘 그렇게 계획을 해."],["언니가 나 싫어하는 거 알아. 알아도 돼.","나도 잘하고 싶어. 근데 잘하는 게 뭔지 모르겠어."]],
+    smoke:["언니가 저 때문에 고생 많이 했어요. 저도 알아요.","근데 미안하다고 하면 언니가 더 힘들어해요.","저 오디션 또 떨어졌어요. 언니한텐 붙었다고 할 거예요."],
+    low:["네? 하하하, 진짜요? 언니! 이 사람 이상해.","에이, 술 드셔서 그래요."],
+    high:["…진짜요? 저 그런 말 들으면 진짜 믿어요. 조심하세요.","좋아요! 저도요. 근데 언니한텐 비밀이에요."] } ],
+  join:[[1,"어머, 오세요 오세요. 저희 자매예요. 안 닮았죠?"],[0,"닮았어요. 얘가 인정을 안 해서 그렇지."],[1,"하나도 안 닮았어."]],
+  ambient:[
+   [ [[0,"너 밥은 먹고 다녀?"],[1,"먹어. 언니는 그 말밖에 안 해."],[0,"그 말이 제일 중요한 거야."]],
+     [[1,"언니 머리 왜 그렇게 했어?"],[0,"왜, 이상해?"],[1,"아니. 예뻐서."]],
+     [[0,"엄마한테 전화 좀 해."],[1,"했어. 어제. 아니 그제."]] ],
+   [ [[1,"언니는 왜 맨날 괜찮다고 해?"],[0,"괜찮으니까."],[1,"거짓말."]],
+     [[0,"너 하고 싶은 거 해. 나는 괜찮아."],[1,"그 말 듣기 싫어. 언니가 괜찮다고 하면 내가 안 괜찮아."]],
+     [[1,"우리 어렸을 때 바다 갔던 거 기억나?"],[0,"너 물에 빠졌잖아."],[1,"언니가 밀었잖아."]] ],
+   [ [[0,"나도 하고 싶은 거 있었어. 나도."],[1,"…알아. 다 알아."],[0,"알면 됐어. 알면… 됐어."]],
+     [[1,"언니 나 싫지?"],[0,"싫어. 근데 너밖에 없어."]],
+     [[0,"우리 이렇게 마시는 거 처음이다."],[1,"그러네. 왜 이제 했지."]],
+     [[1,"언니, 나 그때 도망간 거 잘못한 거야?"],[0,"아니. 잘했어. 너는 잘했어. 그 얘기 다시 하지 마."]] ] ] },
+
+{ title:"시인과 편집자", desc:"마감을 석 달 넘긴 시인과 기다리는 사람", pos:[0,0],
+  chars:[
+  { name:"정호", role:"시인", look:{coat:0x4a4038, hair:0x3d3935, pants:0x24221f},
+    pour:[["허, 고맙소. 시인한테 술 따라주는 사람은 복 받아요.","받겠습니다."],["좋다. 술은 남이 따라줘야 시가 돼.","당신 얼굴에 시가 있어. 농담 아니야."],["더! 오늘 원고 안 써. 술이 원고야.","나 취했다고 생각하지? 나는 원래 이래."]],
+    drink:[["잘 마시네. 시를 아는 사람이구만.","건배. 아무것도 아닌 것들을 위해."],["단어가 다 거짓말이야. 술만 정직해.","생각하지 마. 쓰지도 마. 그냥 마셔."],["나 한 줄도 못 썼어. 일 년 동안. 한 줄도.","좋은 시는 다 남이 썼어. 나는 늦었어.","전처가 애들한테 나보고 괴물이라 그랬대. 맞아. 사람은 못 되고 괴물만 됐어."]],
+    smoke:["원고 마감 넘긴 지 석 달이에요. 수연 씨가 참아주는 거야.","나 사실 무서워. 다 써버린 것 같아서.","수연 씨한테 고맙다는 말 한 번도 안 했어. 오늘 할까."],
+    low:["허허, 시인한테 그런 말 하면 시로 써버린다?","고맙소. 근데 그 말은 젊은 사람한테 하시오."],
+    high:["…그 말, 받아 적어도 되겠소? 오늘 첫 줄이 나왔네.","좋다. 좋아요. 이 나이에 좋다는 말이 이렇게 크다."] },
+  { name:"수연", role:"편집자", look:{coat:0x7d8a7a, hair:0x18130f, long:true, pants:0x2a2a2a},
+    pour:[["감사합니다. 선생님은 먼저 드셨어요.","네, 조금만요. 저 일하는 중이에요."],["좋네요. 오늘은 원고 얘기 안 해도 되겠다.","따라주시니까 기분 좋다. 여기선 제가 맨날 따라요."],["가득이요. 마감이고 뭐고.","저 취하면 선생님한테 할 말 다 해요. 각오하세요."]],
+    drink:[["와, 잘 드시네요.","저도요. 한 모금만."],["좋은 문장은 기다리면 와요. 근데 기다리는 게 일이에요.","건배해요. 안 쓰인 책들을 위해서."],["선생님, 저 이 일 그만두면요, 선생님 때문이에요.","저도 쓰고 싶었어요. 다들 그렇잖아요. 다들."]],
+    smoke:["저 사실 선생님 시 좋아해서 이 일 시작했어요. 비밀이에요.","근데 좋아하는 사람이랑 일하면 안 돼요. 미워지거든요.","그래도 오늘은 안 밉네요. 이상하다."],
+    low:["네? …아, 저 지금 근무 중이라서요. 농담이에요.","그런 말은 선생님이 잘하시는데. 옮았어요?"],
+    high:["…저 그 말 메모해 둘게요. 진짜예요.","좋아요. 근데 내일 원고처럼 사라지면 안 돼요."] } ],
+  join:[[0,"앉으시오. 시를 모르는 사람도 앉아도 돼요."],[1,"선생님, 그냥 앉으세요 하면 되잖아요."],[0,"그게 그거야."]],
+  ambient:[
+   [ [[1,"선생님, 원고는요?"],[0,"쓰고 있어. 머리로."],[1,"머리 말고 종이로요."]],
+     [[0,"수연 씨는 왜 편집을 해?"],[1,"글이 좋아서요."],[0,"그럼 쓰지."],[1,"…쓰는 건 무서워요."]],
+     [[0,"이 집 오뎅탕 국물이 시야."],[1,"그 말 지난번에도 하셨어요."],[0,"좋은 말은 또 해도 돼."]] ],
+   [ [[0,"나는 말이야, 다 늦었어. 다 늦었는데 계속 해."],[1,"늦어도 하시잖아요."],[0,"그게 더 창피한 거야."]],
+     [[1,"선생님 시는요, 슬픈데 웃겨요."],[0,"그게 칭찬이야?"],[1,"제일 큰 칭찬이에요."]],
+     [[0,"쓰려고 사는 게 아니야. 살다 보니 쓰는 거지."],[1,"그럼 안 쓰셔도 되는 거예요?"],[0,"…그건 아니고."]] ],
+   [ [[1,"선생님 저 힘들어요. 선생님 기다리는 거."],[0,"…미안해. 미안하다."],[1,"처음 들어요, 그 말."]],
+     [[0,"나는 수연 씨 없으면 아무것도 아니야."],[1,"그 말도 원고로 써 주세요."]],
+     [[1,"저도 시 쓴 적 있어요. 아무도 몰라요."],[0,"보여줘."],[1,"싫어요."]] ] ] },
+
+{ title:"십 년 된 부부", desc:"오늘이 결혼기념일인 두 사람", pos:[0,0],
+  chars:[
+  { name:"민규", role:"회사원", look:{coat:0x5a5f4a, hair:0x1a1512, pants:0x222220},
+    pour:[["아, 고맙습니다. 아내는 안 따라줘요.","감사합니다. 저희 결혼기념일이에요."],["좋네요. 기념일엔 누가 따라줘야지.","고마워요. 십 년 동안 제가 따랐거든요."],["더요. 오늘은 제가 취해야 돼요. 할 말이 있어요.","저 잘 살고 있어요. 진짜예요. 아마요."]],
+    drink:[["잘 드시네요.","건배해요. 십 년을 위해서."],["결혼은요, 매일 같은 술 마시는 거예요. 맛있는 날도 있고.","마셔요. 생각하면 늙어요."],["언제부터 우리가 말을 안 했지. 모르겠어.","나는 똑같은데. 똑같아서 문제인가 봐."]],
+    smoke:["끊었다고 했는데. 아내 앞에선요.","요즘 집에 가면 조용해요. 너무 조용해요.","그래도 저 사람이에요. 다른 사람은 생각이 안 나요."],
+    low:["저 유부남이에요. 하하. 아내 앞에서.","고마워요. 근데 그 말은 아내한테 들어야 되는 말이에요."],
+    high:["…고마워요. 이 말을 오늘 처음 듣네. 기념일에.","좋다. 이상하게 좋다. 아내가 웃는다, 저 봐요."] },
+  { name:"혜원", role:"디자이너", look:{coat:0x8a3f3a, hair:0x17120f, bob:true, pants:0x232123},
+    pour:[["감사합니다.","오늘 기념일이라 좀 마셔도 돼요."],["좋네요. 이 사람은 기념일도 까먹었었어요.","받을게요. 오늘은 다 받을래요."],["가득이요. 십 년 치 마실 거예요.","저 안 울어요. 술 때문이에요."]],
+    drink:[["잘 드시네요.","건배."],["사랑이요? 사랑은 모르겠고, 습관은 확실해요.","좋은 날은 좋은 날인데 왜 이렇게 쓸쓸하지."],["저 사람이 미운 게 아니에요. 그냥 내가 없어진 것 같아요.","다시 태어나면요? 또 만날 것 같아요. 그게 무서워요."]],
+    smoke:["저 사람 담배 다시 피우는 거 알아요. 모른 척해요.","결혼하면 둘이 되는 줄 알았어요. 근데 혼자 둘이에요.","그래도 집에 가면 불 켜져 있는 게 좋아요."],
+    low:["어머, 남편 앞에서요? 하하, 대담하시다.","고마워요. 저 아직 괜찮나 봐요."],
+    high:["…고마워요. 누가 나를 그렇게 본 게 언제였지.","좋아요. 근데 이 사람이 질투해야 되는데 안 하네요."] } ],
+  join:[[0,"아, 앉으세요. 오늘 저희 결혼 십 년 됐어요."],[1,"축하해 주실 필요는 없어요."],[0,"왜 그렇게 말해."]],
+  ambient:[
+   [ [[0,"여기 처음 왔던 거 기억나?"],[1,"여기 아니었어. 건너편이었어."],[0,"…그래?"]],
+     [[1,"당신 오늘 넥타이 왜 맸어?"],[0,"기념일이니까."],[1,"그거 내가 산 거 아니야."]],
+     [[0,"애들은 잘 자겠지."],[1,"애들 얘기 하지 말자. 오늘은."]] ],
+   [ [[1,"우리 언제부터 말 안 했지?"],[0,"지금 하잖아."],[1,"이건 말이 아니야."]],
+     [[0,"나는 당신이 웃는 게 좋아."],[1,"그럼 웃게 해줘."],[0,"…노력할게."]],
+     [[1,"결혼 안 했으면 뭐 했을까."],[0,"나랑 연애했겠지."],[1,"그것도 결혼이야."]] ],
+   [ [[1,"나 요즘 내가 누군지 모르겠어."],[0,"내 아내지."],[1,"그거 말고."]],
+     [[0,"나 아직 당신 좋아해. 아직도."],[1,"…취했어."],[0,"취해서 하는 말이 진짜야."]],
+     [[1,"우리 다시 시작할 수 있을까?"],[0,"시작은 몰라. 계속은 할 수 있어."]] ] ] },
+
+{ title:"빈 테이블", desc:"손님들끼리 앉는 자리", pos:[0,0], open:true, chars:[], join:[], ambient:[[],[],[]] },
+{ title:"빈 테이블", desc:"손님들끼리 앉는 자리", pos:[0,0], open:true, chars:[], join:[], ambient:[[],[],[]] },
+{ title:"빈 테이블", desc:"손님들끼리 앉는 자리", pos:[0,0], open:true, chars:[], join:[], ambient:[[],[],[]] },
+{ title:"빈 테이블", desc:"손님들끼리 앉는 자리", pos:[0,0], open:true, chars:[], join:[], ambient:[[],[],[]] }
+];
+const POS = [[6.3,-4.2],[-6.3,-4.2],[-2.1,.4],[2.1,.4],[-2.1,-4.2],[-6.3,.4],[2.1,-4.2],[6.3,.4],[-6.3,4.8],[-2.1,4.8],[2.1,4.8],[6.3,4.8]];
+TABLES.forEach((d,i)=>d.pos=POS[i]);
+
+/* ───────────── 소리 ───────────── */
+let AC=null, muted=false, master=null, roomStarted=false;
+function audio(){
+  if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=muted?0:1; master.connect(AC.destination); }catch(e){ AC=null; } }
+  if(AC&&AC.state!=='running'){ try{ AC.resume(); }catch(e){} }
+  return AC;
+}
+['pointerdown','keydown','touchend'].forEach(ev=>addEventListener(ev,()=>{ audio(); if(S.mode!=='intro') startRoomTone(); },{capture:true,passive:true}));
+let noiseBuf=null;
+function noise(){ if(noiseBuf) return noiseBuf; const a=audio(); if(!a) return null; noiseBuf=a.createBuffer(1,a.sampleRate*2,a.sampleRate); const d=noiseBuf.getChannelData(0); let last=0; for(let i=0;i<d.length;i++){ d[i]=Math.random()*2-1; } return noiseBuf; }
+function volAt(pos){ if(!pos) return 1; const d=camera.position.distanceTo(pos); return Math.max(.12,Math.min(1,2.4/(d+.8))); }
+// the bar itself: murmur of voices, the fridge hum, far-off glasses
+function startRoomTone(){
+  const a=audio(), nb=noise(); if(!a||!nb||roomStarted) return; roomStarted=true;
+  const src=a.createBufferSource(); src.buffer=nb; src.loop=true;
+  const lp=a.createBiquadFilter(); lp.type='bandpass'; lp.frequency.value=420; lp.Q.value=.7;
+  const g=a.createGain(); g.gain.value=.05; src.connect(lp).connect(g).connect(master); src.start();
+  const lfo=a.createOscillator(), lg=a.createGain(); lfo.frequency.value=.23; lg.gain.value=.025; lfo.connect(lg).connect(g.gain); lfo.start();
+  const lfo2=a.createOscillator(), lg2=a.createGain(); lfo2.frequency.value=1.7; lg2.gain.value=140; lfo2.connect(lg2).connect(lp.frequency); lfo2.start();
+  const hum=a.createOscillator(), hg=a.createGain(); hum.frequency.value=60; hum.type='sine'; hg.gain.value=.012; hum.connect(hg).connect(master); hum.start();
+  const far=()=>{ if(!muted) sfxClink(null,.18+Math.random()*.15); setTimeout(far,3500+Math.random()*7000); }; setTimeout(far,2500);
+}
+function sfxClink(pos,scale=1){ const a=audio(); if(!a) return; const v=volAt(pos)*scale; const t=a.currentTime; [2850,4120,5300].forEach((f,i)=>{ const o=a.createOscillator(), g=a.createGain(); o.frequency.value=f*(1+Math.random()*.02); o.type='sine'; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.28*v/(i+1),t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+.5); o.connect(g).connect(master); o.start(t); o.stop(t+.55); }); }
+function sfxPour(dur,pos){ const a=audio(), nb=noise(); if(!a||!nb) return; const v=volAt(pos); const t=a.currentTime; const src=a.createBufferSource(); src.buffer=nb; src.loop=true; const bp=a.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=900; bp.Q.value=3; const g=a.createGain(); g.gain.value=0; src.connect(bp).connect(g).connect(master);
+  for(let s=0;s<dur;s+=.075){ const amp=(.22+.18*Math.random())*v; g.gain.setValueAtTime(amp,t+s); g.gain.linearRampToValueAtTime(amp*.25,t+s+.06); bp.frequency.setValueAtTime(700+Math.random()*500+s*250,t+s); }
+  g.gain.linearRampToValueAtTime(0,t+dur+.05); src.start(t); src.stop(t+dur+.1); }
+function sfxLighter(){ const a=audio(), nb=noise(); if(!a||!nb) return; const t=a.currentTime; const s=a.createBufferSource(); s.buffer=nb; const hp=a.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3000; const g=a.createGain(); g.gain.setValueAtTime(.35,t); g.gain.exponentialRampToValueAtTime(.001,t+.06); s.connect(hp).connect(g).connect(master); s.start(t); s.stop(t+.1); }
+function sfxGulp(pos){ const a=audio(); if(!a) return; const v=volAt(pos); const t=a.currentTime; const o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(180,t); o.frequency.exponentialRampToValueAtTime(90,t+.12); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.25*v,t+.02); g.gain.exponentialRampToValueAtTime(.0001,t+.16); o.connect(g).connect(master); o.start(t); o.stop(t+.2); }
+
+/* ───────────── 렌더러 / 씬 ───────────── */
+const canvas = $('#c');
+const renderer = new T.WebGLRenderer({canvas, antialias:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputEncoding = T.sRGBEncoding;
+renderer.toneMapping = T.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+const scene = new T.Scene();
+scene.background = new T.Color(0x0b0a09);
+scene.fog = new T.Fog(0x0b0a09, 14, 32);
+const camera = new T.PerspectiveCamera(55, 1, 0.05, 70);
+
+const mat = (hex, o={}) => { const e=o.emissiveHex; delete o.emissiveHex; const m = new T.MeshStandardMaterial(Object.assign({roughness:.8, metalness:0}, o)); m.color.setHex(hex).convertSRGBToLinear(); if (e!==undefined) m.emissive.setHex(e).convertSRGBToLinear(); return m; };
+const box = (w,h,d,m) => new T.Mesh(new T.BoxGeometry(w,h,d), m);
+const cyl = (rt,rb,h,m,seg=14) => new T.Mesh(new T.CylinderGeometry(rt,rb,h,seg), m);
+function textTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new T.CanvasTexture(c); t.encoding=T.sRGBEncoding; t.anisotropy=4; return t; }
+function wallSign(w,h,pw,ph,draw){ return new T.Mesh(new T.PlaneGeometry(w,h), new T.MeshStandardMaterial({map:textTex(pw,ph,draw), roughness:.9})); }
+
+const blockers = [];
+const block = (x0,x1,z0,z1) => blockers.push([x0,x1,z0,z1]);
+
+scene.add(new T.HemisphereLight(0x4a3c34, 0x120c08, .55));
+scene.add(new T.AmbientLight(0x3a2a1e, .5));
+
+const RW=9, RD=8;
+const floor = new T.Mesh(new T.PlaneGeometry(RW*2,RD*2), mat(0x3a2a1f,{roughness:.95})); floor.rotation.x=-PI/2; scene.add(floor);
+const seamM = mat(0x261b14);
+for(let i=-RW;i<=RW;i++){ const s=box(.012,.002,RD*2,seamM); s.position.set(i,.001,0); scene.add(s); }
+const wallMat = mat(0x6d5a48,{roughness:.95}), wallDark = mat(0x3b3029,{roughness:.95});
+const back = box(RW*2,3.2,.1,wallMat); back.position.set(0,1.6,-RD); scene.add(back);
+const wainB = box(RW*2,1.0,.12,wallDark); wainB.position.set(0,.5,-RD+.03); scene.add(wainB);
+[-1,1].forEach(s=>{ const w=box(.1,3.2,RD*2,wallMat); w.position.set(s*RW,1.6,0); scene.add(w); const wn=box(.12,1.0,RD*2,wallDark); wn.position.set(s*(RW-.03),.5,0); scene.add(wn); });
+const ceil = new T.Mesh(new T.PlaneGeometry(RW*2,RD*2), mat(0x231a14)); ceil.rotation.x=PI/2; ceil.position.y=3.2; scene.add(ceil);
+block(-RW-1,RW+1,-RD-1,-RD+.08); block(-RW-1,-RW+.08,-RD,RD); block(RW-.08,RW+1,-RD,RD);
+const frameMat = mat(0x2a2420,{roughness:.6});
+const DOOR = .85;
+[-1,1].forEach(s=>{
+  const cx = s*(RW+DOOR)/2, w = RW-DOOR;
+  const sill=box(w,.9,.14,wallDark); sill.position.set(cx,.45,RD); scene.add(sill);
+  const g=new T.Mesh(new T.PlaneGeometry(w,1.6), new T.MeshStandardMaterial({color:0x6f8aa0, transparent:true, opacity:.1, roughness:.1, metalness:.2, side:T.DoubleSide})); g.position.set(cx,1.7,RD); scene.add(g);
+  block(s<0?-RW-1:DOOR, s<0?-DOOR:RW+1, RD-.1, RD+.1);
+});
+const lintel=box(RW*2,.7,.14,wallDark); lintel.position.set(0,2.85,RD); scene.add(lintel);
+[-RW,-6,-3,-DOOR,DOOR,3,6,RW].forEach(x=>{ const p=box(.12,1.6,.16,frameMat); p.position.set(x,1.7,RD); scene.add(p); });
+const mat1 = new T.Mesh(new T.PlaneGeometry(1.4,.8), mat(0x4a2a22)); mat1.rotation.x=-PI/2; mat1.position.set(0,.004,RD-.6); scene.add(mat1);
+
+const counter = box(3.4,1.05,.65,mat(0x4a3324,{roughness:.7})); counter.position.set(-6.6,.52,-RD+.5); scene.add(counter);
+const ctop = box(3.5,.05,.75,mat(0x2a1d14,{roughness:.4})); ctop.position.set(-6.6,1.07,-RD+.5); scene.add(ctop);
+block(-8.4,-4.8,-RD,-RD+.95);
+const fridge = box(1.3,2.0,.62,mat(0x8c9294,{roughness:.5,metalness:.3})); fridge.position.set(7.6,1.0,-RD+.4); scene.add(fridge);
+const fglow = new T.Mesh(new T.PlaneGeometry(1.1,1.75), mat(0xdfeee6,{emissiveHex:0xbfe6d0, emissiveIntensity:.9})); fglow.position.set(7.6,1.02,-RD+.715); scene.add(fglow);
+block(6.85,8.35,-RD,-RD+.8);
+const greenGlass = mat(0x2f7a4a,{roughness:.25, metalness:.1, transparent:true, opacity:.92});
+const brownGlass = mat(0x5a3412,{roughness:.25, transparent:true, opacity:.92});
+const labelSoju = mat(0xeef2ea), labelBeer = mat(0xd8c9a4);
+function bottle(kind){
+  const g=new T.Group(), m=kind==='beer'?brownGlass:greenGlass;
+  const b=cyl(.038,.038,.17,m); b.position.y=.085; g.add(b);
+  const sh=cyl(.014,.038,.05,m); sh.position.y=.195; g.add(sh);
+  const nk=cyl(.013,.013,.045,m); nk.position.y=.24; g.add(nk);
+  const lb=cyl(.0395,.0395,.06,kind==='beer'?labelBeer:labelSoju); lb.position.y=.08; g.add(lb);
+  return g;
+}
+for(let r=0;r<4;r++) for(let i=0;i<6;i++){ const b=bottle(i%5===4?'beer':'soju'); b.scale.setScalar(.9); b.position.set(7.13+i*.19,.22+r*.43,-RD+.58); scene.add(b); }
+for(let i=0;i<5;i++){ const b=bottle(i%2?'beer':'soju'); b.position.set(-7.9+i*.22,1.1,-RD+.4); scene.add(b); }
+const cl=new T.PointLight(0xffb060,.7,5,2); cl.position.set(-6.6,2.4,-RD+1); scene.add(cl);
+
+function buildSigns(){
+  const serif='"Gowun Batang", serif', sans='"Gowun Dodum", sans-serif';
+  const add=(m,x,y,z,ry=0)=>{ m.position.set(x,y,z); m.rotation.y=ry; scene.add(m); };
+  add(wallSign(.9,1.25,360,500,(c,w,h)=>{ c.fillStyle='#e8dcae'; c.fillRect(0,0,w,h); c.fillStyle='#2b2620'; c.font=`700 34px ${serif}`; c.fillText('소극장 공연',30,70); c.font=`700 64px ${serif}`; c.fillText('겨울,',30,180); c.fillText('산책',30,260); c.font=`22px ${sans}`; c.fillText('11.20 — 12.03',30,330); c.fillText('평일 저녁 8시',30,365); c.fillStyle='#7b6a4c'; c.fillRect(30,410,300,3); c.font=`18px ${sans}`; c.fillText('대학로 작은 극장',30,450); }), -1.3,1.85,-RD+.06);
+  add(wallSign(.75,1.0,300,400,(c,w,h)=>{ c.fillStyle='#f1efe8'; c.fillRect(0,0,w,h); c.fillStyle='#5a7a86'; c.fillRect(0,0,w,200); c.globalAlpha=.6; for(let i=0;i<7;i++){ c.beginPath(); c.moveTo(0,40+i*24); for(let x=0;x<=w;x+=20) c.lineTo(x,40+i*24+Math.sin(x/30+i)*6); c.lineWidth=2; c.strokeStyle='#f1efe8'; c.stroke(); } c.globalAlpha=1; c.fillStyle='#24302f'; c.font=`700 40px ${serif}`; c.fillText('사진전 「물결」',22,262); c.font=`19px ${sans}`; c.fillText('무료 관람 · 2층 갤러리',22,310); c.fillText('월요일 휴관',22,342); }), 0,1.8,-RD+.06);
+  add(wallSign(.6,.8,240,320,(c,w,h)=>{ c.fillStyle='#d9c7b0'; c.fillRect(0,0,w,h); c.fillStyle='#3a2a20'; c.font=`700 36px ${serif}`; c.fillText('막걸리',22,70); c.fillText('파전',22,120); c.font=`20px ${sans}`; c.fillText('비 오는 날',22,190); c.fillText('막걸리 한 병 서비스',22,222); }), 1.15,1.75,-RD+.06);
+  add(wallSign(1.4,1.7,420,510,(c,w,h)=>{ c.fillStyle='#1e2320'; c.fillRect(0,0,w,h); c.strokeStyle='#8b7a5c'; c.lineWidth=8; c.strokeRect(6,6,w-12,h-12); c.fillStyle='#efe6d4'; c.font=`700 38px ${serif}`; c.fillText('차림표',36,64); c.font=`25px ${sans}`;
+    [['소주','5,000'],['맥주','5,000'],['막걸리','6,000'],['계란말이','12,000'],['김치전','13,000'],['두부김치','15,000'],['골뱅이무침','18,000'],['오뎅탕','16,000']].forEach(([a,b],i)=>{ c.textAlign='left'; c.fillText(a,40,120+i*44); c.textAlign='right'; c.fillText(b,w-40,120+i*44); });
+    c.textAlign='left'; c.fillStyle='#b9a98a'; c.font=`19px ${sans}`; c.fillText('영업 새벽 다섯 시까지',40,h-28); }), RW-.07,1.85,0,-PI/2);
+  add(wallSign(.8,1.1,320,440,(c,w,h)=>{ c.fillStyle='#ece5d8'; c.fillRect(0,0,w,h); c.fillStyle='#8a3d32'; c.font=`700 30px ${serif}`; c.fillText('시 낭독의 밤',26,70); c.fillStyle='#2e2924'; c.font=`20px ${sans}`; ['매달 마지막 목요일','누구나 한 편씩','술은 각자'].forEach((s,i)=>c.fillText(s,26,140+i*36)); c.strokeStyle='#2e2924'; c.lineWidth=2; c.beginPath(); c.arc(w-80,h-90,46,0,PI*2); c.stroke(); }), -RW+.07,1.85,-.3,PI/2);
+  add(wallSign(1.5,.42,640,180,(c,w,h)=>{ c.fillStyle='#e9e2cf'; c.fillRect(0,0,w,h); c.fillStyle='#24423a'; c.font=`700 110px ${serif}`; c.textAlign='center'; c.fillText('소 담',w/2,128); }), 0,2.85,RD+.09);
+}
+
+const street = new T.Mesh(new T.PlaneGeometry(24,8), mat(0x2b2e33,{roughness:1})); street.rotation.x=-PI/2; street.position.set(0,-.01,RD+4); scene.add(street);
+const curb = box(24,.12,.3,mat(0x55585c)); curb.position.set(0,.06,RD+4.9); scene.add(curb);
+block(-12,12,RD+4.75,RD+6); block(-12,-10,RD,RD+6); block(10,12,RD,RD+6);
+const opp = box(26,6,.3,mat(0x1e2228)); opp.position.set(0,3,RD+8); scene.add(opp);
+for(let i=0;i<11;i++){ const w=new T.Mesh(new T.PlaneGeometry(.9,.7), mat(0x111111,{emissiveHex:i%3?0x2a2620:0xd8a860, emissiveIntensity:i%3?.2:.8})); w.position.set(-10+i*2.1,2.2+(i%2)*1.6,RD+7.84); w.rotation.y=PI; scene.add(w); }
+const pole=cyl(.05,.06,4.2,mat(0x3c3f44)); pole.position.set(3.6,2.1,RD+4.5); scene.add(pole);
+const lh=box(.5,.12,.25,mat(0x3c3f44)); lh.position.set(3.4,4.2,RD+4.5); scene.add(lh);
+const sl=new T.PointLight(0xc9d8ff,1.3,10,2); sl.position.set(3.2,4.0,RD+4.2); scene.add(sl);
+const dl=new T.PointLight(0xffb867,.8,5,2); dl.position.set(0,2.6,RD+.9); scene.add(dl);
+const ash=cyl(.18,.14,.75,mat(0x5a5f62,{metalness:.5,roughness:.4})); ash.position.set(1.4,.375,RD+1.0); scene.add(ash); block(1.2,1.6,RD+.8,RD+1.2);
+const SMOKE_SLOTS = [[-.4,RD+1.4],[.42,RD+1.55],[-1.2,RD+1.9],[1.0,RD+2.1],[-.2,RD+2.5],[.9,RD+2.9]];
+
+/* ───────────── 사람 ───────────── */
+const SKIN = 0xd6b08e, shoeM = mat(0x15120f);
+function makePerson(o){
+  const g=new T.Group();
+  const coat=mat(o.coat), skin=mat(o.skin||SKIN), hair=mat(o.hair||0x18130f), pants=mat(o.pants||0x232224);
+  const torso=box(.42,.56,.26,coat); torso.position.y=.3; g.add(torso);
+  const sh=cyl(.13,.13,.42,coat,12); sh.rotation.z=PI/2; sh.position.y=.52; g.add(sh);
+  if(o.scarf){ const sc=new T.Mesh(new T.TorusGeometry(.1,.045,8,16),mat(o.scarf)); sc.rotation.x=PI/2; sc.position.y=.6; g.add(sc); }
+  const neck=cyl(.05,.05,.08,skin,8); neck.position.y=.62; g.add(neck);
+  const head=new T.Group(); head.position.y=.76; g.add(head);
+  const face=new T.Mesh(new T.SphereGeometry(.125,22,16),skin); face.scale.set(.92,1.08,.98); head.add(face);
+  const cap=new T.Mesh(new T.SphereGeometry(.134,22,12,0,PI*2,0,PI*.55),hair); cap.position.y=.018; cap.rotation.x=-.32; head.add(cap);
+  if(o.long){ const l=box(.27,.36,.1,hair); l.position.set(0,-.1,-.085); head.add(l); }
+  if(o.bob){ const b=box(.29,.2,.22,hair); b.position.set(0,-.035,-.035); head.add(b); }
+  const arms=[-1,1].map(s=>{ const a=new T.Group(); a.position.set(s*.25,.5,0); const m=box(.11,.5,.12,coat); m.position.y=-.25; a.add(m); const h=new T.Mesh(new T.SphereGeometry(.045,10,8),skin); h.position.y=-.52; a.add(h); g.add(a); return a; });
+  const cig=new T.Group(); const cb=cyl(.007,.007,.08,mat(0xf2efe8),6); cb.rotation.x=PI/2; cb.position.z=.04; cig.add(cb); const tip=cyl(.008,.008,.012,mat(0x331100,{emissiveHex:0xff5a1a,emissiveIntensity:2}),6); tip.rotation.x=PI/2; tip.position.z=.085; cig.add(tip); cig.position.set(0,-.55,0); cig.visible=false; arms[1].add(cig);
+  const legsStand=new T.Group(), legsSit=new T.Group();
+  const legs=[-1,1].map(s=>{ const pv=new T.Group(); pv.position.x=s*.1; const l=box(.15,.86,.17,pants); l.position.y=-.43; pv.add(l); const so=box(.15,.07,.26,shoeM); so.position.set(0,-.86,.04); pv.add(so); legsStand.add(pv); return pv; });
+  [-1,1].forEach(s=>{ const th=box(.15,.15,.46,pants); th.position.set(s*.1,-.02,.2); legsSit.add(th); const sn=box(.14,.46,.15,pants); sn.position.set(s*.1,-.27,.42); legsSit.add(sn); const so=box(.15,.07,.25,shoeM); so.position.set(s*.1,-.5,.47); legsSit.add(so); });
+  g.add(legsStand,legsSit);
+  const p={g,head,arms,legs,cig,speaking:false,lookAt:null,yaw:0,tilt:0,tiltUntil:0,phase:Math.random()*10,seated:true,armT:null,drunk:0};
+  p.sit=()=>{ p.seated=true; legsSit.visible=true; legsStand.visible=false; arms.forEach(a=>a.rotation.set(-1.1,0,0)); cig.visible=false; };
+  p.stand=(smoking)=>{ p.seated=false; legsSit.visible=false; legsStand.visible=true; legs.forEach(l=>l.rotation.set(0,0,0)); arms[0].rotation.set(0,0,.06); if(smoking){ arms[1].rotation.set(-1.25,.25,-.1); cig.visible=true; } else { arms[1].rotation.set(0,0,-.06); cig.visible=false; } };
+  p.walkPose=(ph,amt)=>{ const s=Math.sin(ph)*amt; legs[0].rotation.x=s*.6; legs[1].rotation.x=-s*.6; arms[0].rotation.x=-s*.45; arms[1].rotation.x=s*.45; };
+  p.sit();
+  return p;
+}
+
+/* ───────────── 잔 ───────────── */
+const shotMat=mat(0xdfe8e6,{roughness:.1,transparent:true,opacity:.42});
+const liqMat=mat(0xe9f4f2,{roughness:.05,transparent:true,opacity:.85,emissiveHex:0x7a8a88,emissiveIntensity:.25});
+function makeGlass(){
+  const g=new T.Group();
+  const outer=cyl(.026,.02,.055,shotMat,14); outer.position.y=.0275; g.add(outer);
+  const liq=cyl(.022,.018,.045,liqMat,14); g.add(liq);
+  g.scale.setScalar(1.5);
+  const G={g,liq,level:0};
+  G.set=(v)=>{ G.level=Math.max(0,Math.min(1,v)); liq.visible=G.level>.03; liq.scale.y=Math.max(.01,G.level); liq.position.y=.004+.0225*G.level; };
+  G.set(0);
+  return G;
+}
+const streamMat=new T.MeshBasicMaterial({color:0xdff3ee,transparent:true,opacity:.7});
+const streamGeo=new T.CylinderGeometry(.005,.004,1,6);
+
+/* ───────────── 테이블 ───────────── */
+const wood=mat(0x6e4c30,{roughness:.6}), woodDark=mat(0x3e2a1b,{roughness:.7});
+const plateMat=mat(0xece7dc,{roughness:.4});
+const eggM=mat(0xe7b94a), jeonM=mat(0xb86b3a), shadeM=mat(0x2f4a3c,{side:T.DoubleSide,roughness:.5}), bulbM=mat(0xfff0d0,{emissiveHex:0xffcf80,emissiveIntensity:3}), cordM=mat(0x111111);
+const shadowM=new T.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28,depthWrite:false});
+const tables = TABLES.map((d,ti)=>{
+  const [tx,tz]=d.pos, side = tx>0 ? -1 : 1;
+  const grp=new T.Group(); grp.position.set(tx,0,tz); scene.add(grp);
+  const top=box(1.75,.06,.86,wood); top.position.y=.76; grp.add(top);
+  [[-.78,-.36],[.78,-.36],[-.78,.36],[.78,.36]].forEach(([x,z])=>{ const l=box(.06,.74,.06,woodDark); l.position.set(x,.37,z); grp.add(l); });
+  const seats=[[-side*.42,-.64,0],[-side*.42,.64,PI],[side*.42,.64,PI],[side*.42,-.64,0]].map(([x,z,ry],si)=>({x,z,ry,si,occ:null,npc:si<d.chars.length}));
+  seats.forEach(s=>{ const t=box(.38,.05,.36,woodDark); t.position.set(s.x,.44,s.z); grp.add(t); const st=cyl(.04,.05,.42,woodDark,8); st.position.set(s.x,.21,s.z); grp.add(st); const ft=cyl(.17,.17,.02,woodDark,12); ft.position.set(s.x,.01,s.z); grp.add(ft);
+    const G=makeGlass(); G.rest=new T.Vector3(s.x+.08*side*(s.si<2?-1:1),.79,s.z*.42); G.g.position.copy(G.rest); grp.add(G.g); s.glass=G; });
+  const p1=cyl(.13,.11,.02,plateMat,20); p1.position.set(-side*.55,.8,.02); grp.add(p1);
+  const eg=box(.16,.05,.07,eggM); eg.position.set(-side*.55,.835,.02); grp.add(eg);
+  const p2=cyl(.15,.12,.025,plateMat,20); p2.position.set(side*.62,.8,-.02); grp.add(p2);
+  const jn=cyl(.12,.12,.02,jeonM,18); jn.position.set(side*.62,.82,-.02); grp.add(jn);
+  const bottles=new T.Group(); grp.add(bottles);
+  const cord=cyl(.006,.006,1.0,cordM,4); cord.position.set(0,2.7,0); grp.add(cord);
+  const shade=new T.Mesh(new T.CylinderGeometry(.08,.24,.2,20,1,true),shadeM); shade.position.set(0,2.15,0); grp.add(shade);
+  const bulb=new T.Mesh(new T.SphereGeometry(.05,12,8),bulbM); bulb.position.set(0,2.08,0); grp.add(bulb);
+  const light=new T.PointLight(0xffb45e,1.6,6,2); light.position.set(0,2.0,0); grp.add(light);
+  const shd=new T.Mesh(new T.CircleGeometry(1.15,32),shadowM); shd.rotation.x=-PI/2; shd.position.y=.003; shd.scale.set(1.25,.85,1); grp.add(shd);
+  block(tx-.98,tx+.98,tz-.92,tz+.92);
+  // a bottle that leaves the table when someone pours
+  const hb=bottle('soju'); hb.visible=false; grp.add(hb);
+  const stream=new T.Mesh(streamGeo,streamMat); stream.visible=false; grp.add(stream);
+  const npcs=d.chars.map((c,i)=>{ const p=makePerson(c.look), s=seats[i]; p.g.position.set(s.x,.53,s.z); p.g.rotation.y=s.ry; grp.add(p.g); p.name=c.name; p.data=c; p.drunk=Math.random()*1.2; p.aff=1.5+Math.random(); p.home=s; s.occ=p; s.glass.set(.5+Math.random()*.5); return p; });
+  const t={d,ti,grp,side,seats,npcs,bottles,light,hb,stream,nb:0,joined:false,amb:[0,0,0],idleTalk:Math.random()*3,idleWho:0,busyUntil:0,nextBg:performance.now()+4000+Math.random()*9000};
+  addBottle(t); addBottle(t); addBottle(t,'beer');
+  return t;
+});
+function addBottle(t,kind='soju'){ if(t.nb>=9) return; const i=t.nb++, b=bottle(kind); b.position.set(-.24+(i%5)*.12,.79,i<5?-.13:.14); b.rotation.y=Math.random()*PI; t.bottles.add(b); }
+const seatOf=(p)=>{ for(const t of tables) for(const s of t.seats) if(s.occ===p) return {t,s}; return null; };
+
+const COATS=[0x3a3836,0x6b3b2e,0x2f4b5a,0x5a5232,0x45304a,0x7a6a55,0x2d4a3a,0x8a4a3a];
+let myCoat=+store.get('hb-coat'); if(!COATS.includes(myCoat)){ myCoat=COATS[Math.floor(Math.random()*COATS.length)]; store.set('hb-coat',myCoat); }
+const player = makePerson({coat:myCoat, hair:0x1c1714, pants:0x262422});
+player.name='나'; scene.add(player.g); player.stand(false); player.g.position.set(0,.88,RD-1.6); player.g.rotation.y=PI; player.walkPh=0;
+
+/* smoke */
+const smokeTex=textTex(64,64,(c,w,h)=>{ const g=c.createRadialGradient(32,32,2,32,32,30); g.addColorStop(0,'rgba(230,230,235,.55)'); g.addColorStop(1,'rgba(230,230,235,0)'); c.fillStyle=g; c.fillRect(0,0,w,h); });
+const puffs=[]; for(let i=0;i<70;i++){ const s=new T.Sprite(new T.SpriteMaterial({map:smokeTex,transparent:true,depthWrite:false,opacity:0})); s.visible=false; scene.add(s); puffs.push({s,life:0,vx:0}); }
+let puffI=0; function emit(pos){ const p=puffs[puffI++%puffs.length]; p.s.position.copy(pos); p.life=3.2; p.vx=(Math.random()-.5)*.08; p.s.visible=true; p.s.scale.setScalar(.06); }
+
+/* ───────────── 상태 ───────────── */
+const S={ mode:'intro', table:null, seat:null, target:'npc0', pd:0, queue:[], cur:null, gapUntil:0, lastAct:0, zoomHold:0, busy:false, near:null, lastHear:0, actN:0, sayN:0, myAct:null, mySay:null, outSlot:null, outWith:null };
+const stageOf=v=>v<3?0:v<6.5?1:2;
+const lastPick=new Map();
+function pick(arr){ if(arr.length===1) return arr[0]; let i; const prev=lastPick.get(arr); do{ i=Math.floor(Math.random()*arr.length); }while(i===prev); lastPick.set(arr,i); return arr[i]; }
+const myName=()=> S.nick||'손님';
+
+/* camera */
+const rig={pos:new T.Vector3(0,2.2,RD+1), look:new T.Vector3(0,1,RD-3), fov:55, tPos:new T.Vector3(), tLook:new T.Vector3(), zoom:0, tZoom:0, focus:new T.Vector3(), yaw:0, pitch:.32};
+function seatShot(t){ const [tx,tz]=t.d.pos; const zs=(S.seat!==null&&t.seats[S.seat].z<0)?1:-1; rig.tPos.set(tx+t.side*2.35,1.8,tz+zs*1.15); rig.tLook.set(tx-t.side*.2,.88,tz-zs*.05); }
+function outsideShot(){ rig.tPos.set(0,1.6,RD+4.4); rig.tLook.set(0,1.2,RD+1.8); }
+function cut(){ rig.pos.copy(rig.tPos); rig.look.copy(rig.tLook); }
+function zoomOn(p){ p.head.getWorldPosition(rig.focus); rig.tZoom=1; S.zoomHold=performance.now()+7000; }
+function zoomOut(){ rig.tZoom=0; }
+
+/* ───────────── 애니메이션 ───────────── */
+const anims=[];
+const ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+const seg=(k,a,b)=>Math.max(0,Math.min(1,(k-a)/(b-a)));
+function play(dur,update,done){ anims.push({t0:performance.now(),dur,update,done}); }
+const V=()=>new T.Vector3();
+// mouth position in table-local space for a person in a seat
+function mouthLocal(t,s){ const dir=new T.Vector3(Math.sin(s.ry),0,Math.cos(s.ry)); return new T.Vector3(s.x,0,s.z).addScaledVector(dir,.17).setY(.53+.69); }
+
+function animDrink(t, s, person, opts={}){
+  const G=s.glass, cheers=!!opts.cheers, dur=cheers?2.9:2.1, start=G.level;
+  const rest=G.rest.clone(), mouth=mouthLocal(t,s);
+  const mid=new T.Vector3(s.x*.35, 1.04, s.z*.32 + (Math.random()-.5)*.05);
+  const tiltSign=-Math.cos(s.ry);
+  const arm=person&&person.arms[1];
+  if(person===player){ setTimeout(()=>{ zoomOn(player); rig.tZoom=.8; S.zoomHold=performance.now()+2400; }, cheers?700:100); }
+  const tl = cheers ? {up:[0,.18], clink:.2, hold:[.18,.3], toMouth:[.3,.45], sip:[.45,.68], back:[.72,1]} : {up:[0,0], clink:-1, hold:[0,0], toMouth:[0,.26], sip:[.28,.62], back:[.66,1]};
+  let clinked=false, gulped=false, tilted=false;
+  play(dur, k=>{
+    const p=G.g.position;
+    if(k<tl.toMouth[0]){ const e=ease(seg(k,tl.up[0],tl.up[1])); p.lerpVectors(rest,mid,e); if(arm) arm.rotation.x=-1.1-e*.6; }
+    else if(k<tl.back[0]){ const e=ease(seg(k,tl.toMouth[0],tl.toMouth[1])); p.lerpVectors(cheers?mid:rest,mouth,e); if(arm) arm.rotation.x=-1.1-(cheers?.6:0)-e*(cheers?.9:1.5);
+      const sk=seg(k,tl.sip[0],tl.sip[1]); G.g.rotation.x=tiltSign*1.9*ease(sk); G.set(start*(1-sk));
+      if(sk>0&&!tilted&&person){ person.tiltUntil=performance.now()+(tl.sip[1]-tl.sip[0])*dur*1000; tilted=true; }
+      if(sk>.5&&!gulped){ gulped=true; G.g.getWorldPosition(tmpA); sfxGulp(tmpA); }
+    } else { const e=ease(seg(k,tl.back[0],tl.back[1])); p.lerpVectors(mouth,rest,e); G.g.rotation.x=tiltSign*1.9*(1-e); if(arm) arm.rotation.x=-2.6+e*1.5; }
+    if(cheers&&!clinked&&k>=tl.clink){ clinked=true; if(!opts.silent){ G.g.getWorldPosition(tmpA); sfxClink(tmpA); } }
+  }, ()=>{ G.g.position.copy(rest); G.g.rotation.set(0,0,0); G.set(0); if(arm&&person.seated) arm.rotation.set(-1.1,0,0); if(opts.done) opts.done(); });
+}
+function animPour(t, fromSeat, toSeat, person, opts={}){
+  const G=toSeat.glass, start=G.level, hb=t.hb, st=t.stream;
+  const home=new T.Vector3(fromSeat.x*.55,.79,fromSeat.z*.25);
+  const toward=new T.Vector3(fromSeat.x-toSeat.x,0,fromSeat.z-toSeat.z);
+  if(toward.lengthSq()<1e-4) toward.set(0,0,toSeat.z>0?1:-1); toward.normalize();
+  const above=G.rest.clone().addScaledVector(toward,.31); above.y=1.11;
+  const dirToGlass=toward.clone().negate();
+  const axis=new T.Vector3().crossVectors(T.Object3D.DefaultUp,dirToGlass).normalize();
+  const q=new T.Quaternion(), tip=V(), glassTop=V(), mid=V(), d=V();
+  const arm=person&&person.arms[1];
+  let sounded=false;
+  hb.visible=true; hb.scale.setScalar(1.25); hb.position.copy(home); hb.quaternion.identity();
+  if(S.table===t.ti&&S.mode==='seated'){ G.g.getWorldPosition(rig.focus); rig.focus.y+=.06; rig.tZoom=.72; S.zoomHold=performance.now()+2600; }
+  play(2.4, k=>{
+    const go=ease(seg(k,0,.22)), tilt=ease(seg(k,.22,.36))*(1-ease(seg(k,.8,.9))), back=ease(seg(k,.9,1));
+    hb.position.lerpVectors(home,above,go*(1-back)); hb.position.y+=Math.sin(go*PI)*.06;
+    q.setFromAxisAngle(axis, tilt*1.9); hb.quaternion.copy(q);
+    if(arm) arm.rotation.x=-1.1-go*(1-back)*.55;
+    const flowing=k>.36&&k<.8;
+    if(flowing){
+      tip.set(0,.33,0).applyQuaternion(q).add(hb.position);
+      glassTop.copy(G.rest); glassTop.y+=.08;
+      d.subVectors(glassTop,tip); const len=Math.max(.01,d.length());
+      mid.addVectors(tip,glassTop).multiplyScalar(.5);
+      st.visible=true; st.position.copy(mid); st.scale.set(1,len,1); st.quaternion.setFromUnitVectors(T.Object3D.DefaultUp,d.normalize());
+      G.set(start+(1-start)*seg(k,.4,.78));
+      if(!sounded){ sounded=true; hb.getWorldPosition(tmpA); sfxPour(1.0,tmpA); }
+    } else st.visible=false;
+  }, ()=>{ hb.visible=false; st.visible=false; G.set(1); if(arm&&person.seated) arm.rotation.set(-1.1,0,0); if(opts.done) opts.done(); });
+}
+const tmpA=new T.Vector3();
+
+/* ───────────── 같이 있는 사람들 (room) ───────────── */
+let room=null, myPeer=null;
+const remotes=new Map();   // peer -> {p, nick, seat:{t,s}|null, actN, sayN, tag, line, lineUntil, tx,tz,ry, pose}
+const tagsEl=$('#tags');
+const clean=(v,n)=>String(v==null?'':v).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯]/g,'').slice(0,n);
+function pubBase(){
+  const pp=player.g.getWorldPosition(tmpB);
+  return { v:1, nick:myName(), coat:myCoat, x:+pp.x.toFixed(2), z:+pp.z.toFixed(2), ry:+player.g.rotation.y.toFixed(2),
+    pose: S.mode==='outside'?'smoke':(S.mode==='seated'?'sit':'walk'), seat: S.table!==null?`${S.table}-${S.seat}`:null, dr:+S.pd.toFixed(1),
+    act:S.myAct, say:S.mySay };
+}
+const tmpB=new T.Vector3();
+let lastPub=0;
+function pub(force){ if(!room) return; const now=performance.now(); if(!force&&now-lastPub<70) return; lastPub=now; room.presence(pubBase()).catch(()=>{}); }
+async function initRoom(){
+  try{ room = (window.claude&&window.claude.use) ? await window.claude.use('room') : null; }catch(e){ room=null; }
+  if(!room&&window.firebaseRoom&&window.FIREBASE_CONFIG){ try{ room=await window.firebaseRoom(window.FIREBASE_CONFIG); }catch(e){ console.warn('같이하기 연결 실패',e); room=null; } }
+  if(!room) return;
+  room.onPeers(ch=>{
+    ch.peers.forEach(pr=>{ if(pr.isMe&&pr.sameTab) myPeer=pr.peer; });
+    ch.left.forEach(pr=>removeRemote(pr.peer));
+    [...ch.joined,...ch.updated].forEach(pr=>{ if(pr.isMe&&pr.sameTab) return; if(pr.kind!=='viewer') return; applyRemote(pr.peer,pr.presence||{},ch.joined.includes(pr)); });
+    updateOnline();
+  },()=>{});
+  pub(true);
+}
+function updateOnline(){ const n=[...remotes.values()].filter(r=>r.ready).length; $('#online').textContent=n?`${n+1}명`:'나 혼자'; if(S.mode==='seated') renderChips(); }
+function removeRemote(peer){ const r=remotes.get(peer); if(!r) return; freeRemoteSeat(r); r.p.g.parent&&r.p.g.parent.remove(r.p.g); r.tag.remove(); remotes.delete(peer); updateOnline(); }
+function freeRemoteSeat(r){ if(r.seat&&r.seat.s.occ===r.p) r.seat.s.occ=null; r.seat=null; }
+function applyRemote(peer,pr,isJoin){
+  if(typeof pr.v!=='number') return;
+  let r=remotes.get(peer);
+  if(!r){
+    const coat=COATS.includes(pr.coat)?pr.coat:COATS[0];
+    const p=makePerson({coat,hair:0x1c1714,pants:0x262422}); p.stand(false); scene.add(p.g);
+    const tag=document.createElement('div'); tag.className='ptag'; tag.innerHTML='<b></b><p hidden></p>'; tagsEl.appendChild(tag);
+    r={p,peer,actN:pr.act?pr.act.n:0,sayN:pr.say?pr.say.n:0,tag,tx:0,tz:0,ry:0,pose:'walk',seat:null,ready:true,lineUntil:0,walkPh:0};
+    remotes.set(peer,r);
+    const x=+pr.x||0, z=+pr.z||0; p.g.position.set(x,.88,z);
+  }
+  r.nick=clean(pr.nick,10)||'손님'; r.p.name=r.nick; r.tag.querySelector('b').textContent=r.nick;
+  r.p.drunk=Math.max(0,Math.min(10,+pr.dr||0));
+  r.tx=Math.max(-12,Math.min(12,+pr.x||0)); r.tz=Math.max(-RD-1,Math.min(RD+6,+pr.z||0)); r.ry=+pr.ry||0;
+  // seat
+  const want = typeof pr.seat==='string' && /^\d{1,2}-\d$/.test(pr.seat) ? pr.seat : null;
+  const curKey = r.seat?`${r.seat.t.ti}-${r.seat.s.si}`:null;
+  if(want!==curKey){
+    freeRemoteSeat(r);
+    if(want){ const [ti,si]=want.split('-').map(Number); const t=tables[ti]; const s=t&&t.seats[si];
+      if(s&&!s.npc){
+        if(s.occ===player && myPeer && myPeer<peer){ /* I keep the seat, they lose it */ }
+        else { if(s.occ===player){ standUp(true); flash(`${r.nick}님이 먼저 앉았어요.`); }
+          if(!s.occ||s.occ===player){ s.occ=r.p; r.seat={t,s}; } }
+      } }
+  }
+  r.pose = pr.pose==='smoke'?'smoke':(pr.pose==='sit'?'sit':'walk');
+  placeRemote(r);
+  // actions & lines (skip anything that happened before we saw them)
+  if(pr.act&&typeof pr.act.n==='number'&&pr.act.n!==r.actN){ r.actN=pr.act.n; if(!isJoin) remoteAct(r,pr.act); }
+  if(pr.say&&typeof pr.say.n==='number'&&pr.say.n!==r.sayN){ r.sayN=pr.say.n; if(!isJoin) remoteSay(r,clean(pr.say.t,80)); }
+}
+function placeRemote(r){
+  const p=r.p;
+  if(r.pose==='sit'&&r.seat){ const {t,s}=r.seat; if(p.g.parent!==t.grp){ t.grp.add(p.g); } p.g.position.set(s.x,.53,s.z); p.g.rotation.set(0,s.ry,0); if(!p.seated) p.sit(); }
+  else { if(p.g.parent!==scene){ const w=p.g.getWorldPosition(tmpB); scene.add(p.g); p.g.position.set(w.x,.88,w.z); }
+    const smoking=r.pose==='smoke'; if(p.seated||!!p.cig.visible!==smoking) p.stand(smoking); if(smoking){ p.g.position.set(r.tx,.88,r.tz); p.g.rotation.y=r.ry; } }
+}
+function remoteHearable(r){ if(S.table!==null&&r.seat&&r.seat.t.ti===S.table) return true; const a=r.p.g.getWorldPosition(tmpB); return a.distanceTo(player.g.getWorldPosition(tmpA))<4.5 || (S.mode==='outside'&&r.pose==='smoke'); }
+function remoteSay(r,text){ if(!text) return; r.line=text; r.lineUntil=performance.now()+1800+[...text].length*90; if(remoteHearable(r)) say(r.p,text,{tb:r.seat?r.seat.t:null,person:true,prio:true}); }
+function targetSeatFor(r,a){
+  const t=tables[a.tb]; if(!t) return null;
+  if(a.to==='npc0') return t.seats[0]; if(a.to==='npc1') return t.seats[1];
+  if(a.to==='self') return r.seat&&r.seat.s;
+  if(a.to===myPeer) return S.table===t.ti?t.seats[S.seat]:null;
+  const o=remotes.get(a.to); return o&&o.seat&&o.seat.t===t?o.seat.s:null;
+}
+function remoteAct(r,a){
+  const k=a.k, line=clean(a.ln,80), t=tables[a.tb];
+  if(line) remoteSay(r,line);
+  if(!t||!r.seat||r.seat.t!==t) { if(k==='smoke'&&a.to===myPeer) showInvite(r); return; }
+  const fromSeat=r.seat.s;
+  if(k==='pour'){ const ts=targetSeatFor(r,a); if(ts){ t.busyUntil=performance.now()+2500; animPour(t,fromSeat,ts,r.p); }
+    if(a.to===myPeer){ flash(`${r.nick}님이 술을 따라줬어요.`); setTimeout(updateMyGlass,2500); } }
+  if(k==='drink'){ t.busyUntil=performance.now()+3000; animDrink(t,fromSeat,r.p,{cheers:true});
+    t.npcs.forEach((n,i)=>{ if(n.home.glass.level>.05) setTimeout(()=>animDrink(t,n.home,n,{cheers:true,silent:true}),80+i*90); });
+    if(S.table===t.ti){ const mine=t.seats[S.seat]; if(mine.glass.level>.05&&!S.busy){ setTimeout(()=>{ animDrink(t,mine,player,{cheers:true,silent:true,done:updateMyGlass}); S.pd=Math.min(10,S.pd+1.2); drunkFx(); },120); } } }
+  if(k==='confess'&&a.to===myPeer){ flash(`${r.nick}님의 고백.`); if(S.table===t.ti) zoomOn(r.p); }
+  if(k==='smoke'&&a.to===myPeer) showInvite(r);
+}
+let inviteFrom=null;
+function showInvite(r){ inviteFrom=r.peer; $('#inviteTx').textContent=`${r.nick}님이 밖에서 담배 피우재요.`; $('#invite').hidden=false; setTimeout(()=>{ if(inviteFrom===r.peer) $('#invite').hidden=true; },20000); }
+
+/* ───────────── UI ───────────── */
+const labelsEl=$('#labels');
+const labels=tables.map(t=>{ const d=document.createElement('div'); d.className='tlabel'; d.innerHTML=`<b>${t.d.title}</b><span>${t.d.desc}</span>`; labelsEl.appendChild(d); return d; });
+const chipsEl=$('#chips');
+function dots(v,n=5,cls=''){ const on=Math.round(Math.max(0,Math.min(10,v))/10*n); let s=''; for(let i=0;i<n;i++) s+=`<i class="${i<on?'on':''}">●</i>`; return `<span class="dots ${cls}">${s}</span>`; }
+function targetsHere(){
+  if(S.table===null) return [];
+  const t=tables[S.table], list=t.npcs.map((p,i)=>({id:'npc'+i,p,npc:true}));
+  remotes.forEach(r=>{ if(r.seat&&r.seat.t===t) list.push({id:r.peer,p:r.p,person:true,r}); });
+  return list;
+}
+function renderChips(){
+  $('#meDots').innerHTML=dots(S.pd);
+  if(S.table===null){ chipsEl.innerHTML=''; return; }
+  const list=targetsHere(); if(!list.some(x=>x.id===S.target)&&S.target!=='self') S.target=list[0]?list[0].id:'self';
+  chipsEl.innerHTML=list.map(x=>x.npc
+    ?`<button class="chip" data-id="${x.id}" aria-pressed="${S.target===x.id}"><b>${x.p.name}</b><small>${x.p.data.role}</small><div class="meters"><span>취기</span>${dots(x.p.drunk)}<span>마음</span>${dots(x.p.aff,5,'heart')}</div></button>`
+    :`<button class="chip person" data-id="${x.id}" aria-pressed="${S.target===x.id}"><b></b><small>손님</small><div class="meters"><span>취기</span>${dots(x.p.drunk)}</div></button>`).join('')
+    + `<button class="chip" data-id="self" aria-pressed="${S.target==='self'}"><b>나</b><small>자작</small></button>`;
+  chipsEl.querySelectorAll('.chip.person b').forEach((b,i)=>{ const x=list.filter(y=>y.person)[i]; b.textContent=x.r.nick; });
+  chipsEl.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{ S.target=b.dataset.id; renderChips(); });
+}
+function updateMyGlass(){ const G=S.table!==null?tables[S.table].seats[S.seat].glass:null; $('#myGlass').textContent=!G?'—':G.level>.7?'가득':G.level>.05?'조금':'비었음'; }
+const hintEl=$('#hint');
+hintEl.innerHTML = touch ? '<b>왼쪽 스틱</b>으로 걷기 · <b>화면 끌기</b>로 둘러보기' : '<b>WASD</b> 걷기 · <b>끌기</b> 둘러보기 · 빈 의자 앞에서 <b>E</b> · <b>T</b> 말하기';
+if(touch) $('#how').innerHTML='왼쪽 스틱으로 걷고, 화면을 끌어서 둘러봐요.<br>빈 의자 앞에서 앉기를 눌러요. 말하기 버튼으로 말할 수 있어요.';
+$('#nick').value=store.get('hb-nick')||'';
+function setHUD(){
+  const w=S.mode==='walk', se=S.mode==='seated', out=S.mode==='outside';
+  document.body.classList.toggle('walk',w);
+  labelsEl.hidden=!w; hintEl.hidden=!w; $('#joy').hidden=!(w&&touch);
+  $('#leave').hidden=!se; chipsEl.hidden=!se; $('#side').hidden=S.mode==='intro';
+  $('#actions').hidden=!se; $('#goIn').hidden=!out||S.busy; if(!w) $('#sit').hidden=true;
+  renderChips(); updateMyGlass();
+}
+const btns=[...document.querySelectorAll('.act')];
+function setBusy(b){ S.busy=b; btns.forEach(x=>x.disabled=b); $('#goIn').hidden=S.mode!=='outside'||b; }
+
+/* subtitles */
+const subEl=$('#sub'), whoEl=$('#who'), lineEl=$('#line');
+function say(who,text,o={}){
+  const it=Object.assign({who,text},o);
+  if(it.prio){ for(let i=S.queue.length-1;i>=0;i--) if(S.queue[i].far) S.queue.splice(i,1); if(S.cur&&S.cur.far) endLine(); }
+  if(S.queue.length>6) S.queue.splice(0,S.queue.length-6);
+  S.queue.push(it);
+}
+function flash(text){ say({name:'',speaking:false,head:player.head},text,{note:true,prio:true}); }
+const everyone=()=>{ const a=[player]; tables.forEach(t=>a.push(...t.npcs)); remotes.forEach(r=>a.push(r.p)); return a; };
+function showLine(it){
+  S.cur=it; it.end=performance.now()+1500+[...it.text].length*85;
+  whoEl.textContent=it.who.name||''; lineEl.textContent=it.text; subEl.classList.add('on'); subEl.classList.toggle('far',!!it.far); subEl.classList.toggle('person',!!it.person);
+  if(it.note) return;
+  it.who.speaking=true;
+  const tb=it.tb;
+  if(tb){ const group=[...tb.npcs]; if(S.table===tb.ti) group.push(player); remotes.forEach(r=>{ if(r.seat&&r.seat.t===tb) group.push(r.p); }); group.forEach(p=>{ if(p!==it.who) p.lookAt=it.who; }); it.who.lookAt=it.to||(it.who===player?(targetPerson()||tb.npcs[0]):tb.npcs.find(p=>p!==it.who)); }
+  if(it.zoom) zoomOn(it.who);
+}
+function endLine(){ if(!S.cur) return; if(S.cur.who) S.cur.who.speaking=false; S.cur=null; subEl.classList.remove('on'); S.gapUntil=performance.now()+320; }
+function clearTalk(){ S.queue.length=0; endLine(); }
+function targetPerson(){ const x=targetsHere().find(x=>x.id===S.target); return x?x.p:null; }
+
+/* chat */
+const chatBar=$('#chatBar'), chatIn=$('#chatIn');
+function openChat(){ if(S.mode==='intro') return; chatBar.hidden=false; chatIn.focus(); keys.clear(); }
+function closeChat(){ chatBar.hidden=true; chatIn.blur(); }
+chatBar.addEventListener('submit',e=>{ e.preventDefault(); const v=clean(chatIn.value,80).trim(); chatIn.value=''; closeChat(); if(!v) return; mySay(v); });
+chatIn.addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.preventDefault(); closeChat(); } e.stopPropagation(); });
+$('#talkBtn').onclick=()=> chatBar.hidden?openChat():closeChat();
+function mySay(text){
+  S.sayN++; S.mySay={t:text,n:S.sayN}; pub(true);
+  say(player,text,{tb:S.table!==null?tables[S.table]:null,prio:true});
+  S.lastAct=performance.now();
+}
+
+/* ───────────── 앉기 / 일어나기 ───────────── */
+function nearestFreeSeat(){
+  let best=null, bd=1.0; const pp=player.g.position;
+  tables.forEach(t=>t.seats.forEach((s,si)=>{ if(s.occ||s.npc) return; tmpA.set(s.x,0,s.z); t.grp.localToWorld(tmpA); const d=Math.hypot(tmpA.x-pp.x, tmpA.z-pp.z); if(d<bd){ bd=d; best={t,si}; } }));
+  return best;
+}
+function sitDown(n){
+  if(S.mode!=='walk'||!n) return;
+  const t=n.t, s=t.seats[n.si]; if(s.occ) return;
+  clearTalk(); S.table=t.ti; S.seat=n.si; S.target='npc0'; s.occ=player; S.mode='seated';
+  dissolve();
+  t.grp.add(player.g); player.g.position.set(s.x,.53,s.z); player.g.rotation.set(0,s.ry,0); player.sit();
+  seatShot(t); cut(); zoomOut(); setHUD(); setBusy(true); pub(true);
+  if(!t.joined){ place.textContent=t.d.title; place.style.opacity=1; setTimeout(()=>place.style.opacity=0,1700); }
+  if(t.npcs.length){ const seq=t.joined?REJOIN:t.d.join;
+    seq.forEach(([i,txt])=>say(t.npcs[i],txt,{to:player,tb:t}));
+    const others=[...remotes.values()].filter(r=>r.seat&&r.seat.t===t);
+    if(others.length) say(t.npcs[1],pick(NPC_ON_PERSON),{tb:t,to:others[0].p}); }
+  t.joined=true;
+  S.lastAct=performance.now();
+}
+function standUp(silent){
+  if(S.mode!=='seated') return;
+  const t=tables[S.table], s=t.seats[S.seat];
+  clearTalk(); zoomOut(); dissolve(); if(s.occ===player) s.occ=null;
+  tmpA.set(s.x,0,s.z+Math.sign(s.z)*.75); t.grp.localToWorld(tmpA);
+  scene.add(player.g); player.g.position.set(tmpA.x,.88,tmpA.z); player.g.rotation.set(0,s.z>0?0:PI,0); player.stand(false); player.lookAt=null;
+  rig.yaw = s.z>0 ? PI : 0;
+  S.mode='walk'; S.table=null; S.seat=null; setBusy(false); setHUD(); pub(true);
+}
+
+/* ───────────── 행동 ───────────── */
+function myAct(k,to,ln){ S.actN++; S.myAct={k,to,n:S.actN,tb:S.table,ln:ln||''}; pub(true); }
+function act(kind){
+  if(S.mode!=='seated'||S.busy||performance.now()<tables[S.table].busyUntil) return;
+  const t=tables[S.table], me=t.seats[S.seat], tg=targetsHere().find(x=>x.id===S.target);
+  const tgt=tg?tg.p:null, isNpc=!!(tg&&tg.npc), isPerson=!!(tg&&tg.person), self=S.target==='self';
+  zoomOut(); setBusy(true); S.lastAct=performance.now();
+  const o={tb:t};
+  if(kind==='pour'){
+    if(t.busyUntil>performance.now()){ setBusy(false); return; }
+    const toSeat = self? me : isNpc? tgt.home : tg.r.seat.s;
+    const line = self? pick(PLAYER_LINES.selfPour) : pick(PLAYER_LINES.pour);
+    say(player,line,{...o,to:tgt||undefined});
+    myAct('pour', self?'self':S.target, line);
+    t.busyUntil=performance.now()+2500;
+    animPour(t,me,toSeat,player,{done:()=>{ updateMyGlass();
+      if(isNpc){ tgt.aff=Math.min(10,tgt.aff+1); say(tgt,pick(tgt.data.pour[stageOf(tgt.drunk)]),{...o,to:player,zoom:stageOf(tgt.drunk)===2&&Math.random()<.4}); renderChips(); }
+      if(self&&t.npcs.length){ say(t.npcs[Math.random()<.5?0:1],pick(NPC_ON_SELFPOUR),{...o,to:player}); }
+    }});
+    if(Math.random()<.35) addBottle(t);
+  }
+  if(kind==='drink'){
+    if(me.glass.level<.05){
+      say(player,pick(PLAYER_LINES.empty),o);
+      if(!t.npcs.length){ flash('잔이 비었어요. 자작하거나 누가 따라줘야 해요.'); renderChips(); return; }
+      const n=t.npcs[Math.random()<.5?0:1];
+      say(n,pick(NPC_POURS_YOU),{...o,to:player});
+      t.busyUntil=performance.now()+2600;
+      setTimeout(()=>animPour(t,n.home,me,n,{done:updateMyGlass}),900);
+    } else {
+      const line=pick(PLAYER_LINES.drink[stageOf(S.pd)]);
+      say(player,line,o); myAct('drink',null,line);
+      t.busyUntil=performance.now()+3000;
+      animDrink(t,me,player,{cheers:true,done:()=>{ updateMyGlass(); }});
+      t.npcs.forEach((n,i)=>{ if(n.home.glass.level>.05){ setTimeout(()=>animDrink(t,n.home,n,{cheers:true,silent:true}),80+i*90); n.drunk=Math.min(10,n.drunk+.6); } n.aff=Math.min(10,n.aff+.4); });
+      S.pd=Math.min(10,S.pd+1.5);
+      const r=isNpc?tgt:t.npcs[0];
+      if(r) setTimeout(()=>{ say(r,pick(r.data.drink[stageOf(r.drunk)]),{...o,to:player,zoom:stageOf(r.drunk)===2&&Math.random()<.35}); drunkFx(); renderChips(); },2600);
+      if(Math.random()<.35) addBottle(t,Math.random()<.25?'beer':'soju');
+    }
+  }
+  if(kind==='confess'){
+    if(self){ say(player,'…나는 나를 좋아해. 좋아하려고 해.',o); setBusy(false); return; }
+    const line=pick(PLAYER_LINES.confess[stageOf(S.pd)]);
+    say(player,line,{...o,to:tgt}); myAct('confess',S.target,line);
+    if(isNpc){
+      const other=t.npcs.find(p=>p!==tgt);
+      const yes=(tgt.aff>=5&&stageOf(tgt.drunk)>=1)||tgt.aff>=8;
+      say(tgt,pick(yes?tgt.data.high:tgt.data.low),{...o,to:player,zoom:true});
+      tgt.aff=yes?Math.min(10,tgt.aff+2):Math.max(0,tgt.aff-1.5);
+      say(other,pick(OTHER_ON_CONFESS),{...o,to:tgt});
+    } else { zoomOn(tgt); if(t.npcs.length) say(t.npcs[0],pick(OTHER_ON_CONFESS),{...o,to:tgt}); }
+  }
+  if(kind==='smoke'){ goOutside(t,isNpc?tgt:null,isPerson?tg.r:null); return; }
+  renderChips();
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const fade=$('#fade'), place=$('#place');
+function waitQueue(){ return new Promise(r=>{ const iv=setInterval(()=>{ if(!S.cur&&!S.queue.length){ clearInterval(iv); r(); } },120); }); }
+function freeSmokeSlot(){ const taken=[...remotes.values()].filter(r=>r.pose==='smoke').map(r=>[r.tx,r.tz]); return SMOKE_SLOTS.findIndex(([x,z])=>!taken.some(([a,b])=>Math.hypot(a-x,b-z)<.45)); }
+async function goOutside(t,npc,withPerson){
+  const line=pick(PLAYER_LINES.smoke);
+  say(player,line,{tb:t,to:npc||(withPerson&&withPerson.p)||undefined});
+  if(withPerson) myAct('smoke',withPerson.peer,line);
+  S.leaving=true; await waitQueue();
+  dissolve();
+  let si=freeSmokeSlot(); if(si<0) si=0;
+  S.mode='outside'; S.outWith=npc; S.leaving=false;
+  const [x,z]=SMOKE_SLOTS[si];
+  scene.add(player.g); player.g.position.set(x,.88,z); player.g.rotation.set(0,si%2?-PI/2-.2:PI/2+.25,0); player.stand(true);
+  if(npc){ const [nx,nz]=SMOKE_SLOTS[si%2?si-1:si+1]||SMOKE_SLOTS[1]; scene.add(npc.g); npc.g.position.set(nx,.88,nz); npc.g.rotation.set(0,si%2?PI/2+.25:-PI/2-.2,0); npc.stand(true); player.lookAt=npc; npc.lookAt=player; }
+  else if(withPerson){ player.lookAt=withPerson.p; }
+  outsideShot(); cut(); zoomOut(); setHUD(); setBusy(true); pub(true);
+  sfxLighter();
+  place.textContent='가게 앞'; place.style.opacity=1;
+  await sleep(1400); place.style.opacity=0;
+  if(npc){ npc.aff=Math.min(10,npc.aff+2); const L=npc.data.smoke, deep=npc.aff>=4||stageOf(npc.drunk)>=1;
+    say(npc,L[0],{to:player}); say(npc,L[1],{to:player}); if(deep) say(npc,L[2],{to:player,zoom:true}); await waitQueue(); }
+  setBusy(false);
+}
+async function joinSmoke(peer){
+  $('#invite').hidden=true; inviteFrom=null;
+  const r=remotes.get(peer); if(!r) return;
+  if(S.mode==='seated'){ goOutside(tables[S.table],null,null); return; }
+  if(S.mode==='walk'){
+    dissolve();
+    let si=freeSmokeSlot(); if(si<0) si=0; const [x,z]=SMOKE_SLOTS[si];
+    player.g.position.set(x,.88,z); player.g.rotation.set(0,PI,0); player.stand(true); S.mode='outside'; S.walkOut=true; S.table=null; outsideShot(); cut(); setHUD(); pub(true); sfxLighter();
+  }
+}
+async function goInside(){
+  if(S.mode!=='outside'||S.busy) return;
+  setBusy(true); clearTalk(); dissolve();
+  if(S.walkOut||S.table===null){ S.walkOut=false; player.stand(false); player.g.position.set(0,.88,RD-1.0); player.g.rotation.set(0,PI,0); rig.yaw=0; dissolve(); cut(); S.mode='walk'; setBusy(false); setHUD(); pub(true); return; }
+  const t=tables[S.table], npc=S.outWith, s=t.seats[S.seat];
+  if(npc){ t.grp.add(npc.g); npc.g.position.set(npc.home.x,.53,npc.home.z); npc.g.rotation.set(0,npc.home.ry,0); npc.sit(); }
+  t.grp.add(player.g); player.g.position.set(s.x,.53,s.z); player.g.rotation.set(0,s.ry,0); player.sit();
+  S.mode='seated'; seatShot(t); cut(); zoomOut(); setHUD(); pub(true);
+  await sleep(700);
+  if(npc){ const other=t.npcs.find(p=>p!==npc);
+    say(other,pick(["둘이 무슨 얘기 했어요?","오래 걸리셨네.","담배 냄새 난다."]),{tb:t,to:npc});
+    say(npc,pick(["아무 얘기도 안 했어요.","그냥… 바람 쐬었어요.","별 얘기 아니에요."]),{tb:t,to:other}); }
+  S.lastAct=performance.now();
+}
+function ambientTalk(t,far){
+  const st=stageOf((t.npcs[0].drunk+t.npcs[1].drunk)/2), pool=t.d.ambient[st], ex=pool[t.amb[st]%pool.length]; t.amb[st]++;
+  ex.forEach(([i,txt])=>say(t.npcs[i],txt,{tb:t,far,to:t.npcs[1-i],zoom:!far&&st===2&&i===1&&Math.random()<.35}));
+  t.npcs.forEach(p=>p.drunk=Math.min(10,p.drunk+.35));
+}
+// tables keep drinking on their own
+function backgroundDrinking(t,now){
+  if(t.npcs.length<2) return;
+  if(now<t.nextBg||now<t.busyUntil) return;
+  t.nextBg=now+9000+Math.random()*12000;
+  if(S.outWith&&t.npcs.includes(S.outWith)) return;
+  const [a,b]=t.npcs, ea=a.home.glass.level<.05, eb=b.home.glass.level<.05;
+  t.busyUntil=now+3200;
+  if(ea||eb){ const from=ea?b:a, to=ea?a:b; animPour(t,from.home,to.home,from); }
+  else if(Math.random()<.55){ animDrink(t,a.home,a,{cheers:true}); setTimeout(()=>animDrink(t,b.home,b,{cheers:true,silent:true}),90); a.drunk=Math.min(10,a.drunk+.4); b.drunk=Math.min(10,b.drunk+.4); }
+  else { const n=Math.random()<.5?a:b; animDrink(t,n.home,n,{}); }
+}
+let bw=store.get('hb-bw')==='1';
+function drunkFx(){ const f=[]; if(bw) f.push('grayscale(1) contrast(1.12) brightness(1.05)'); if(S.pd>1){ f.push(`blur(${Math.min(1.4,S.pd*.13).toFixed(2)}px)`); if(!bw) f.push(`saturate(${(1+S.pd*.04).toFixed(2)})`); } canvas.style.filter=f.join(' '); disImg.style.filter=canvas.style.filter; }
+
+/* ───────────── 디졸브 ───────────── */
+const disImg=$('#dissolve'), disCtx=disImg.getContext('2d');
+function dissolve(){
+  if(reduce) return;
+  try{
+    renderer.render(scene,camera);
+    disImg.width=canvas.width; disImg.height=canvas.height;
+    disCtx.drawImage(canvas,0,0);
+    disImg.style.transition='none'; disImg.style.opacity='1'; void disImg.offsetWidth;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ disImg.style.transition='opacity 1.3s ease'; disImg.style.opacity='0'; }));
+  }catch(e){}
+}
+
+/* ───────────── 조는 사람 ───────────── */
+const DOZE_LINES=["…아, 잠깐 졸았다.","방금 꿈꿨어요. 바다였는데… 아무도 없었어요.","자는 거 아니에요. 눈만 감은 거예요.","꿈에 누가 나왔는데. 누구였더라."];
+function dozeTick(tb,dt){
+  tb.npcs.forEach(p=>{
+    if(p.drunk<8){ p.dozing=false; return; }
+    if(Math.random()<dt*.05){ const was=p.dozing; p.dozing=!p.dozing;
+      if(was&&S.table===tb.ti&&S.mode==='seated'&&!S.cur&&!S.queue.length) say(p,pick(DOZE_LINES),{tb}); }
+  });
+}
+
+/* ───────────── 입력 ───────────── */
+const keys=new Set(), joyV={x:0,y:0};
+addEventListener('keydown',e=>{
+  if(S.mode==='intro'||e.target===chatIn||e.target===$('#nick')) return;
+  if(e.code==='KeyT'||(e.code==='Enter'&&S.mode!=='outside')){ e.preventDefault(); openChat(); return; }
+  keys.add(e.code);
+  const k={Digit1:'pour',Digit2:'drink',Digit3:'smoke',Digit4:'confess'}[e.code]; if(k) act(k);
+  if(e.code==='KeyE'&&S.mode==='walk') sitDown(S.near);
+  if(e.code==='Escape'||e.code==='KeyQ') standUp();
+  if(e.code==='Enter'&&S.mode==='outside') goInside();
+  if(e.code.startsWith('Arrow')||e.code==='Space') e.preventDefault();
+});
+addEventListener('keyup',e=>keys.delete(e.code));
+addEventListener('blur',()=>keys.clear());
+btns.forEach(b=>b.addEventListener('click',()=>act(b.dataset.act)));
+$('#leave').onclick=()=>standUp(); $('#goIn').onclick=goInside; $('#sit').onclick=()=>sitDown(S.near);
+$('#inviteGo').onclick=()=>joinSmoke(inviteFrom); $('#inviteX').onclick=()=>{ $('#invite').hidden=true; inviteFrom=null; };
+$('#bwBtn').onclick=e=>{ bw=!bw; store.set('hb-bw',bw?'1':'0'); e.currentTarget.setAttribute('aria-pressed',String(bw)); dissolve(); drunkFx(); };
+$('#bwBtn').setAttribute('aria-pressed',String(bw));
+$('#soundBtn').onclick=e=>{ muted=!muted; audio(); if(master) master.gain.setTargetAtTime(muted?0:1,AC.currentTime,.05); e.currentTarget.textContent=muted?'소리 끔':'소리 켬'; e.currentTarget.setAttribute('aria-pressed',String(!muted)); };
+function start(){ drunkFx(); audio(); startRoomTone(); S.nick=clean($('#nick').value,10).trim()||'손님'; store.set('hb-nick',S.nick); audio(); $('#card').classList.add('out'); S.mode='walk'; setHUD(); pub(true); }
+$('#start').onclick=start; $('#nick').addEventListener('keydown',e=>{ if(e.key==='Enter') start(); });
+let drag=null;
+canvas.addEventListener('pointerdown',e=>{ if(S.mode!=='walk') return; drag={id:e.pointerId,x:e.clientX,y:e.clientY}; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove',e=>{ if(!drag||e.pointerId!==drag.id) return; rig.yaw-=(e.clientX-drag.x)*.0055; rig.pitch=Math.max(.05,Math.min(.75,rig.pitch+(e.clientY-drag.y)*.004)); drag.x=e.clientX; drag.y=e.clientY; });
+const endDrag=e=>{ if(drag&&e.pointerId===drag.id) drag=null; };
+canvas.addEventListener('pointerup',endDrag); canvas.addEventListener('pointercancel',endDrag);
+const joy=$('#joy'), knob=joy.querySelector('i'); let joyId=null;
+joy.addEventListener('pointerdown',e=>{ joyId=e.pointerId; joy.setPointerCapture(e.pointerId); moveJoy(e); });
+joy.addEventListener('pointermove',e=>{ if(e.pointerId===joyId) moveJoy(e); });
+const endJoy=e=>{ if(e.pointerId!==joyId) return; joyId=null; joyV.x=joyV.y=0; knob.style.transform=''; };
+joy.addEventListener('pointerup',endJoy); joy.addEventListener('pointercancel',endJoy);
+function moveJoy(e){ const r=joy.getBoundingClientRect(); let dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2); const m=Math.hypot(dx,dy), R=r.width/2-12; if(m>R){ dx*=R/m; dy*=R/m; } knob.style.transform=`translate(${dx}px,${dy}px)`; joyV.x=dx/R; joyV.y=dy/R; }
+
+function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; rig.fov=w<h?68:55; camera.fov=rig.fov; camera.updateProjectionMatrix(); }
+addEventListener('resize',resize); resize();
+
+function collide(p,r=.28){
+  for(const [x0,x1,z0,z1] of blockers){
+    const cx=Math.max(x0,Math.min(p.x,x1)), cz=Math.max(z0,Math.min(p.z,z1));
+    const dx=p.x-cx, dz=p.z-cz, d2=dx*dx+dz*dz;
+    if(d2<r*r){ if(d2>1e-8){ const d=Math.sqrt(d2), k=(r-d)/d; p.x+=dx*k; p.z+=dz*k; } else {
+      const o=[p.x-x0+r, x1-p.x+r, p.z-z0+r, z1-p.z+r], m=Math.min(...o);
+      if(m===o[0]) p.x=x0-r; else if(m===o[1]) p.x=x1+r; else if(m===o[2]) p.z=z0-r; else p.z=z1+r; } }
+  }
+}
+
+/* ───────────── 루프 ───────────── */
+const clock=new T.Clock(), tmp=new T.Vector3(), tmp2=new T.Vector3(), lookV=new T.Vector3(), mv=new T.Vector3();
+rig.tPos.copy(rig.pos); rig.tLook.copy(rig.look);
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(.05,clock.getDelta()), t=clock.elapsedTime, now=performance.now();
+  const pp=player.g.position;
+
+  if(S.mode==='walk'){
+    let fx=0, fz=0;
+    if(keys.has('KeyW')||keys.has('ArrowUp')) fz+=1; if(keys.has('KeyS')||keys.has('ArrowDown')) fz-=1;
+    if(keys.has('KeyD')||keys.has('ArrowRight')) fx+=1; if(keys.has('KeyA')||keys.has('ArrowLeft')) fx-=1;
+    fx+=joyV.x; fz-=joyV.y;
+    const m=Math.min(1,Math.hypot(fx,fz));
+    if(m>.08){
+      const fwx=-Math.sin(rig.yaw), fwz=-Math.cos(rig.yaw), rx=Math.cos(rig.yaw), rz=-Math.sin(rig.yaw);
+      mv.set(fwx*fz+rx*fx, 0, fwz*fz+rz*fx).normalize();
+      if(S.pd>2){ mv.applyAxisAngle(T.Object3D.DefaultUp,Math.sin(t*1.7)*S.pd*.03); }
+      const sp=(keys.has('ShiftLeft')?3.4:2.1)*m;
+      pp.x+=mv.x*sp*dt; pp.z+=mv.z*sp*dt; collide(pp);
+      const face=Math.atan2(mv.x,mv.z); let d=face-player.g.rotation.y; d=Math.atan2(Math.sin(d),Math.cos(d)); player.g.rotation.y+=d*Math.min(1,dt*10);
+      player.walkPh+=dt*sp*4.2; player.walkPose(player.walkPh,1); pub();
+    } else { player.walkPh*=.85; player.walkPose(player.walkPh,0); }
+    const dist=3.0, cp=Math.cos(rig.pitch), sp2=Math.sin(rig.pitch);
+    rig.tPos.set(pp.x+Math.sin(rig.yaw)*dist*cp, .9+sp2*dist+.55, pp.z+Math.cos(rig.yaw)*dist*cp);
+    if(pp.z<RD){ rig.tPos.x=Math.max(-RW+.25,Math.min(RW-.25,rig.tPos.x)); rig.tPos.z=Math.max(-RD+.25,Math.min(RD-.15,rig.tPos.z)); rig.tPos.y=Math.min(3.0,rig.tPos.y); }
+    else { rig.tPos.z=Math.max(RD+.25,rig.tPos.z); }
+    rig.tLook.set(pp.x,1.35,pp.z);
+    const n=nearestFreeSeat(); S.near=n; const sit=$('#sit');
+    if(n){ sit.hidden=false; const html=`<b>앉기</b>${touch?'':'<kbd>E</kbd>'}<small>${n.t.d.title}</small>`; if(sit.dataset.k!==html){ sit.innerHTML=html; sit.dataset.k=html; } } else sit.hidden=true;
+    let ht=null, hd=2.7; tables.forEach(tb=>{ if(!tb.npcs.length) return; const d=Math.hypot(tb.d.pos[0]-pp.x, tb.d.pos[1]-pp.z); if(d<hd){ hd=d; ht=tb; } });
+    if(S.cur&&S.cur.far&&S.cur.tb!==ht) clearTalk();
+    if(ht&&!S.cur&&!S.queue.length&&now-S.lastHear>1800&&now>S.gapUntil){ ambientTalk(ht,true); S.lastHear=now; }
+  }
+
+  if(S.cur&&now>S.cur.end){ endLine(); if(S.mode==='walk') S.lastHear=now; }
+  if(!S.cur&&S.queue.length&&now>S.gapUntil) showLine(S.queue.shift());
+  if(S.mode==='seated'&&!S.cur&&!S.queue.length&&S.busy&&!S.leaving&&now>tables[S.table].busyUntil){ setBusy(false); S.lastAct=now; renderChips(); updateMyGlass(); }
+  if(S.mode==='seated'&&!S.busy&&!S.cur&&!S.queue.length&&now-S.lastAct>6500){
+    const t=tables[S.table], mine=t.seats[S.seat];
+    if(!t.npcs.length){ /* quiet table */ }
+    else if(mine.glass.level<.05&&Math.random()<.6&&now>t.busyUntil){ const n=t.npcs[Math.random()<.5?0:1]; setBusy(true); say(n,pick(NPC_POURS_YOU),{tb:t,to:player}); t.busyUntil=now+3000; setTimeout(()=>animPour(t,n.home,mine,n,{done:updateMyGlass}),700); }
+    else { setBusy(true); ambientTalk(t,false); }
+    S.lastAct=now;
+  }
+  if(S.mode==='seated'&&!S.busy){ const tb=now<tables[S.table].busyUntil; if(btns[0].disabled!==tb) btns.forEach(b=>b.disabled=tb); }
+  if(rig.tZoom>0&&now>S.zoomHold&&!S.cur) zoomOut();
+
+  tables.forEach(tb=>{
+    backgroundDrinking(tb,now);
+    if(S.cur&&S.cur.tb===tb) return;
+    if(!tb.npcs.length) return;
+    dozeTick(tb,dt);
+    tb.idleTalk-=dt; if(tb.idleTalk<=0){ tb.idleWho=1-tb.idleWho; tb.idleTalk=2+Math.random()*3; tb.npcs.forEach(p=>p.speaking=false); tb.npcs[tb.idleWho].speaking=true; tb.npcs.forEach((p,i)=>p.lookAt=tb.npcs[1-i]); }
+    tb.light.intensity=1.6+Math.sin(t*7+tb.ti)*.03;
+  });
+
+  for(let i=anims.length-1;i>=0;i--){ const a=anims[i], k=Math.min(1,(now-a.t0)/(a.dur*1000)); a.update(k); if(k>=1){ anims.splice(i,1); a.done&&a.done(); } }
+
+  // other people walking around
+  remotes.forEach(r=>{
+    const p=r.p;
+    if(r.pose==='walk'&&p.g.parent===scene){
+      const dx=r.tx-p.g.position.x, dz=r.tz-p.g.position.z, dd=Math.hypot(dx,dz);
+      if(dd>4){ p.g.position.x=r.tx; p.g.position.z=r.tz; }
+      else { p.g.position.x+=dx*Math.min(1,dt*9); p.g.position.z+=dz*Math.min(1,dt*9); }
+      let d=r.ry-p.g.rotation.y; d=Math.atan2(Math.sin(d),Math.cos(d)); p.g.rotation.y+=d*Math.min(1,dt*10);
+      if(dd>.03){ r.walkPh+=dt*9; p.walkPose(r.walkPh,1); } else p.walkPose(0,0);
+    }
+  });
+
+  everyone().forEach(p=>{
+    let yawT=0;
+    if(p.lookAt&&p.lookAt!==p){ p.lookAt.head.getWorldPosition(tmp); p.g.updateMatrixWorld(); p.g.worldToLocal(tmp); yawT=Math.max(-.75,Math.min(.75,Math.atan2(tmp.x,tmp.z))); }
+    p.yaw+=(yawT-p.yaw)*Math.min(1,dt*4); p.head.rotation.y=p.yaw;
+    const tl=now<p.tiltUntil?-.55:(p.dozing?.5:0); p.tilt+=(tl-p.tilt)*Math.min(1,dt*6); p.head.rotation.x=p.tilt;
+    p.head.position.y=.76+(p.speaking?Math.abs(Math.sin(t*9+p.phase))*.012:Math.sin(t*1.3+p.phase)*.003);
+    if(p!==player) p.g.rotation.z=Math.sin(t*.9+p.phase)*(p.drunk||0)*.004;
+    if(p.cig.visible&&Math.random()<dt*3){ p.cig.getWorldPosition(tmp2); tmp2.y+=.02; emit(tmp2); }
+  });
+  puffs.forEach(p=>{ if(p.life<=0) return; p.life-=dt; p.s.position.y+=dt*.22; p.s.position.x+=p.vx*dt; const k=1-p.life/3.2; p.s.scale.setScalar(.06+k*.5); p.s.material.opacity=Math.max(0,.5*(1-k)); if(p.life<=0) p.s.visible=false; });
+
+  if(S.mode==='intro'){ rig.tPos.set(Math.sin(t*.05)*3, 2.6, RD-.6); rig.tLook.set(0,1.0,0); }
+  const k=1-Math.exp(-dt*(S.mode==='walk'?8:2.2)); rig.pos.lerp(rig.tPos,k); rig.look.lerp(rig.tLook,k);
+  rig.zoom+=(rig.tZoom-rig.zoom)*(1-Math.exp(-dt*(reduce?8:1.7)));
+  camera.position.copy(rig.pos);
+  const sw=reduce?0:Math.min(.06,S.pd*.006);
+  camera.position.x+=Math.sin(t*.7)*sw; camera.position.y+=Math.sin(t*1.1)*sw*.6;
+  lookV.copy(rig.look).lerp(rig.focus,rig.zoom*.8); camera.lookAt(lookV);
+  const fovT=rig.fov-rig.zoom*rig.fov*.5; if(Math.abs(camera.fov-fovT)>.01){ camera.fov=fovT; camera.updateProjectionMatrix(); }
+  camera.updateMatrixWorld();
+
+  const w=innerWidth,h=innerHeight;
+  if(S.mode==='walk'){ tables.forEach((tb,i)=>{ const d=Math.hypot(tb.d.pos[0]-pp.x,tb.d.pos[1]-pp.z); tmp.set(tb.d.pos[0],1.75,tb.d.pos[1]).project(camera); const vis=tmp.z<1&&d<6.5; labels[i].style.opacity=vis?Math.max(0,Math.min(1,(6.5-d)/2)):0; if(vis){ labels[i].style.left=((tmp.x*.5+.5)*w)+'px'; labels[i].style.top=((-tmp.y*.5+.5)*h)+'px'; } }); }
+  remotes.forEach(r=>{
+    r.p.head.getWorldPosition(tmp); const d=tmp.distanceTo(camera.position); tmp.y+=.3; tmp.project(camera);
+    const vis=S.mode!=='intro'&&tmp.z<1&&d<14; r.tag.hidden=!vis;
+    if(vis){ r.tag.style.left=((tmp.x*.5+.5)*w)+'px'; r.tag.style.top=((-tmp.y*.5+.5)*h)+'px'; const pl=r.tag.querySelector('p'); const showL=now<r.lineUntil&&d<9; if(showL&&pl.textContent!==r.line) pl.textContent=r.line; pl.hidden=!showL; }
+  });
+
+  renderer.render(scene,camera);
+}
+setHUD();
+const fontsReady=document.fonts?Promise.all([document.fonts.load('700 30px "Gowun Batang"'),document.fonts.load('20px "Gowun Dodum"')]):Promise.resolve();
+Promise.race([fontsReady,new Promise(r=>setTimeout(r,2000))]).then(buildSigns);
+initRoom();
+frame();
+})();
+</script>
+
+</body>
+</html>

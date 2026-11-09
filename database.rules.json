@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "bar": {
+      "players": {
+        ".read": "auth != null",
+        "$id": {
+          ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid) && (!newData.exists() || newData.child('uid').val() === auth.uid)",
+          ".validate": "!newData.exists() || (newData.child('j').isString() && newData.child('j').val().length < 4000)"
+        }
+      },
+      "pos": {
+        ".read": "auth != null",
+        "$id": {
+          ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid) && (!newData.exists() || newData.child('uid').val() === auth.uid)"
+        }
+      }
+    }
+  }
+}
